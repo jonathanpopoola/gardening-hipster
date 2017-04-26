@@ -1,0 +1,12 @@
+<div class="inner">
+    <ul class="list-unstyled">
+        <li>
+            <h4 class="custom-font-semi-bold" data-ng-bind="deal.product_name | htmlFilter"></h4></li>
+        <li><img class="img-thumbnail" src="{{deal.aw_image_url}}" alt="Image of {{deal.product_name}}" title="{{deal.product_name}}" /></li>
+        <li>
+            <p class="custom-font-light">{{deal.product_description | limitTo: 140}} ...</p>
+        </li>
+        <li><strong>£ {{deal.search_price}}</strong></li>
+        <li><a href="#buy-seeds-and-plants/{{deal.title}}">Find out more <span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a></li>
+    </ul>
+</div>

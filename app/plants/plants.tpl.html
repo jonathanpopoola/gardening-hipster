@@ -1,0 +1,46 @@
+
+<div class="container">
+    
+    <div class="row">
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <div data-plant-filter="" data-search="search" data-input-title="Search by plant name"></div>
+        </div>
+    </div>
+    <div class="row hidden-sm hidden-xs">
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <h1 data-ng-if="plantinfo.typeOfPlant" data-ng-bind="plantinfo.typeOfPlant"></h1>
+            <h1 data-ng-if="!plantinfo.typeOfPlant" data-ng-hide="filtered.length == 0">Plants, seeds and more</h1>
+        </div>
+    </div> 
+    <div class="row" data-ng-hide="search.title.length >= 1"> 
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 highlighted-plant">
+            <div class="col-md-5 col-lg-5 col-sm-12 col-xs-12">
+                <div class="plants-main-image" style="background-image: url({{plantinfo.plants[0].image.medium}})"></div>
+                <!--<img src="" title="{{plantinfo.plants[0].title}}" alt="{{plantinfo.plants[0].title}} image" />-->
+            </div>
+            <div class="col-md-7 col-lg-7 col-sm-12 col-xs-12">
+                <h2 class="custom-font-semi-bold" data-ng-bind="plantinfo.plants[0].title"></h2>
+                <h3 class="custom-font-light nick-name-text" data-ng-if="plantinfo.plants[0].nickname">Also know as <strong>{{plantinfo.plants[0].nickname}}</strong></h3>
+                <p data-ng-bind="plantinfo.plants[0].plant_description"></p>
+                <a href="#plants/{{plantinfo.plants[0].template}}/{{plantinfo.plants[0].title}}">Find out more</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <p data-ng-show="filtered.length == 0">Sorry there are'nt plants that match your search, please try a different search.</p>
+        </div>
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 plant-article-list-container"> 
+            <ul class="plant-lister list-unstyled">
+                <!--<li data-ng-if="$index > 0" data-ng-repeat="plant in plantinfo.plants | filter:search | orderBy:'title'"> -->
+                <li data-ng-repeat="plant in filtered = (plantinfo.plants | filter:search | orderBy:'title')"> 
+                    <h3 data-ng-bind="plant.title"></h3>
+                    <div class="image-maintainer" style="background-image: url({{plant.image.medium}})"></div>
+                    <p data-ng-bind="plant.plant_description | limitTo: 70"></p>
+                    <a href="#plants/{{plant.template}}/{{plant.title}}">Read more</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

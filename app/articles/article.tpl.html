@@ -1,0 +1,37 @@
+<div class="container splash-panel">
+    <div class="container">
+    <div class="row">
+        
+        <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12">
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                <h1 class="custom-font-semi-bold" data-ng-bind="articles.article.title"></h1>
+                <p data-ng-bind="articles.article.article_subheading"></p>    
+            </div>
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12">
+                    <img data-ng-src="{{articles.article.image.large}}" class="img-responsive photo-frame" />
+                </div>
+                <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+                    <!--<h5 class="custom-font-semi-bold"><span aria-hidden="true" class="glyphicon glyphicon-calendar"></span> Can be planted in:</h5>-->
+                    <!--<ul class="list-unstyled addCapitals">-->
+                    <!--    <li data-ng-repeat="canSow in plant.months_sow">{{canSow}}</li>-->
+                    <!--</ul>-->
+                    <!--<h5 class="custom-font-semi-bold"><span aria-hidden="true" class="glyphicon glyphicon-calendar"></span> Flowers in:</h5>-->
+                    <!--<ul class="list-unstyled addCapitals">-->
+                    <!--    <li data-ng-repeat="canSow in plant.months_flower">{{canSow}}</li>-->
+                    <!--</ul>-->
+                </div> 
+            </div>
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">        
+                    <!--<h4 class="custom-font-semi-bold">Description</h4>-->
+                    <p class="article-body-text" data-ng-bind="articles.article.article_body"></p>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12 plant-article-deal-holder">
+            <h2 data-ng-hide="!articles.article.Keywords" class="custom-font-semi-bold area-heading">Deals</h2>
+            <div class="mini-deal" data-deal-element-mini data-ng-repeat="deal in articles.deals"  deal="deal"></div>
+        </div>
+        
+    </div>
+    </div>
+</div>

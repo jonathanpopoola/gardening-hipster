@@ -1,0 +1,44 @@
+<div class="container splash-panel deal-indivdual-page">
+    <div class="container">
+        <!--<div class="row">
+        <div class="col-lg-md">
+            <h3 class="custom-font-semi-bold">Gardening Hipster</h3>
+            <h4 class="custom-font-normal">The home of all things gardening</h4>
+        </div>
+    </div>-->
+
+        <div class="row" data-ng-repeat="deal in seeds.deal">
+
+            <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12">
+                <div class="col-lg-12 col-md-12">
+                    <h1 class="custom-font-semi-bold" data-ng-bind="deal.product_name"></h1>
+                    <h5 class="custom-font-light">Deal from: <strong>{{deal.merchant_name}}</strong></h5>
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+                        <img data-ng-src="{{deal.aw_image_url}}" class="img-responsive photo-frame" />
+                    </div>
+                    <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12">
+                        <h4 class="custom-font-semi-bold">Description</h4>
+                        <p data-ng-bind="deal.product_description"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+                <h3>Buy now</h3>
+                <p>To buy <strong>{{deal.product_name}} from {{deal.merchant_name}} click below :</strong></p>
+                <a target="_blank" href="{{deal.deep_link}}" class="buy-now-price custom-font-semi-bold">Buy now for {{deal.search_price}}</a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                <h3 class="custom-font-semi-bold secondary-title">Similar deals</h3>
+            </div>
+
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 more-deal-holder plant-article-deal-holder">
+
+                <div class="mini-deal" data-deal-element-mini data-ng-repeat="del in seeds.matchingDeals" deal="del"></div>
+            </div>
+        </div>
+    </div>
+</div>

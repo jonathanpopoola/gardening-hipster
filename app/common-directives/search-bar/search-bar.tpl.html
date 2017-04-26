@@ -1,0 +1,20 @@
+<input data-ng-hide="fallBackActivated" type="text" placeholder="Search" id="searchInput" data-ng-model="searchBar.searchTerm" data-ng-change="searchBar.searchInputChange();" />
+<input data-ng-show="fallBackActivated" type="text" id="tabletSearchInput" data-ng-model="searchBar.searchTerm" data-ng-change="searchBar.searchInputChange();" />
+<span data-ng-show="fallBackActivated" id="tablet-search-icon" class="glyphicon glyphicon-search"></span>
+
+<ul class="search-results list-unstyled" data-ng-class="{'visible' : searchBar.results.length >=1}">
+    <li data-ng-repeat="searchResult in searchBar.results">
+        <ul class="list-inline list-unstyled search-elem">
+            <li>
+                <img data-ng-if="searchResult.aw_image_url" src="{{searchResult.aw_image_url}}" title="{{searchResult.title}} image" alt="{{searchResult.title}} image"  />
+                <img data-ng-if="!searchResult.aw_image_url" src="{{searchResult.image.thumb}}" title="{{searchResult.title}} image" alt="{{searchResult.title}} image"  />
+                <h5 data-ng-if="searchResult.product_name"><strong>Deal :</strong>{{searchResult.product_name}}</h5>
+                <h5 data-ng-if="!searchResult.product_name"><strong>Info :</strong>{{searchResult.title}}</h5>
+                <a data-ng-if="!searchResult.product_name" href="#plants/{{searchResult.template}}/{{searchResult.title}}" data-ng-click="searchBar.results = []; searchBar.searchTerm = ''">View more info</a>
+                <a data-ng-if="searchResult.product_name" href="#buy-seeds-and-plants/{{searchResult.title}}" data-ng-click="searchBar.results = []; searchBar.searchTerm = ''">View more info</a>
+           
+            </li>
+            
+        </ul>
+    </li>
+</ul>

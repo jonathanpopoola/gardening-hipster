@@ -1,0 +1,3442 @@
+<?php
+
+error_reporting(E_ALL ^ E_NOTICE ^ E_WARNING);
+
+
+
+//SKY BRAND API
+final class Api {
+
+  public $items_per_page = 24;
+  public $operation;
+
+  private static $instances = array();
+  public static $config = array();
+
+  private function __clone(){}
+  private function __wakeup(){}
+  private function __construct(){}
+  
+  public static function getInstance()
+  {
+    $cls = get_called_class(); // late-static-bound class name
+    if (!isset(self::$instances[$cls])) {
+      self::$instances[$cls] = new static;
+    }
+    return self::$instances[$cls];
+  }
+
+  public function init($config) {
+
+    //return success for all OPTIONS requests
+    if($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+      http_response_code(200);
+      exit;
+    }
+
+    $this->operation =  $this->getOperation();
+
+    $this->checkRequestStatus();
+
+    $page_no = wire('input')->get->page ?: wire('input')->page ?: 50;
+    $offset = wire('input')->get->offset ? wire('input')->offset : 0;
+
+    self::$config = $config;
+
+    switch($this->operation) {
+
+      //SUGGESTIONS
+      //region
+      case (preg_match('/suggestions\/assets/', $this->operation) || empty($this->operation)  ? true : false):
+
+      $query = wire('sanitizer')->selectorValue(wire('input')->title);
+
+      if(empty($query)) {
+        die();
+      }
+
+      $cache = wire('modules')->get("MarkupCache");
+      if(!$output = $cache->get(md5('suggestions/assets/' . $query), 2592000)) {
+
+        $suggestions = wire('pages')->find( "title%=$query, template=asset, parent=/assets, limit=10" );
+
+        $output = array();
+
+        $output[] = html_entity_decode ($query, ENT_QUOTES );
+
+        foreach ($suggestions as $suggestion) {
+          $output[] = html_entity_decode ($suggestion->title, ENT_QUOTES );
+        }
+
+
+        $output = serialize($output);
+
+        $cache->save($output);
+      }
+
+      $output = unserialize($output);        
+
+      header('Content-Type: application/json');
+      header("Cache-Control: Cache-Control: public, max-age=30, s-maxage=30");
+      header("Expires: " . gmdate('D, d M Y H:i:s \G\M\T', time() + 30));
+      header("Pragma: cache");
+
+      echo json_encode($output);
+
+      break;
+
+      case (preg_match('/suggestions\/campaigns/', $this->operation) || empty($this->operation)  ? true : false):
+
+      $query = wire('sanitizer')->text(wire('input')->title);
+
+      $cache = wire('modules')->get("MarkupCache");
+      if(!$output = $cache->get(md5('suggestions/campaigns' . $query), 2592000)) {
+
+        $suggestions = wire('pages')->find( "title%=$query, template=campaign, parent=/campaigns, limit=10" );
+
+        $result = array();
+
+        $result[] = html_entity_decode ($query, ENT_QUOTES );
+
+        foreach ($suggestions as $suggestion) {
+          $result[] = html_entity_decode ($suggestion->title, ENT_QUOTES );
+        }
+
+        $output = serialize($result);
+
+        $cache->save($output);
+      }
+
+      $output = unserialize($output);   
+
+      header('Content-Type: application/json');
+      header("Cache-Control: Cache-Control: public, max-age=30, s-maxage=30");
+      header("Expires: " . gmdate('D, d M Y H:i:s \G\M\T', time() + 30));
+      header("Pragma: cache");
+
+      echo json_encode($output);
+
+      break;
+      //endregion
+      
+      //case 'get-gardening-news':
+        
+      //  $ch = curl_init() or die(curl_error());
+     //   curl_setopt($ch, CURLOPT_URL,"http://api.feedzilla.com/v1/articles/search.json?q=Michael");
+      //  curl_setopt($ch, CURLOPT_HTTPHEADER, array(                               
+     //           'Content-Type: application/json'));
+      //  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+     //   $data1=curl_exec($ch) or die(curl_error());
+     //   output_json(true, '', $data1); 
+     //   curl_close($ch); 
+      
+    //  break;
+    
+    case 'get-plant-deals' :
+    
+    $deals = wire('pages')->find("parent=/deals, limit=32");
+      $deallist = [];
+      foreach($deals as $deal) {
+        $x = $this->prepare_asset($deal);
+        array_push($deallist, $x);
+      }
+
+      output_json(true, '', $deallist); 
+    
+    
+    break;
+    
+    case 'deal' :
+      
+      $x = json_decode(file_get_contents('php://input'));
+      $dealId = $x->dealId;
+      $dealString = "parent=/deals, limit=1, title=".$dealId;
+      
+      $deals = wire('pages')->find($dealString);
+      $deallist = [];
+      foreach($deals as $deal) {
+        $x = $this->prepare_asset($deal);
+        array_push($deallist, $x);
+      }
+      
+      output_json(true, '', $deallist);
+    
+    break;
+    
+    case 'articles' :
+    
+      $x = json_decode(file_get_contents('php://input'));
+      
+      $pageString = "parent=/articles";
+      
+      if($x->limit) {
+        $limitSplit = round($x->limit);
+        $pageString .= ",limit=".$limitSplit;
+      }
+       
+      $articlelist = [];
+      $articles = wire('pages')->find($pageString);
+      foreach($articles as $article) {
+        $x = $this->prepare_asset($article);
+        array_push($articlelist, $x);
+      }
+
+      output_json(true, '', $articlelist); 
+    
+    break;
+    
+    case 'get-article' :
+    
+      $x = json_decode(file_get_contents('php://input'));
+      
+      $pageString = "parent=/articles, title=".$x->title;
+
+       
+      $articlelist = [];
+      $articles = wire('pages')->find($pageString);
+      foreach($articles as $article) {
+        $x = $this->prepare_asset($article);
+        array_push($articlelist, $x);
+      }
+
+      output_json(true, '', $articlelist); 
+    
+    break;
+    
+    case 'search' :
+    
+      $x = json_decode(file_get_contents('php://input'));
+      $searchTerm = $x->searchTerm;
+      
+      //$queryString = "product_name|title*=".$searchTerm;
+      
+      $pageString = "parent=/plants, title*=".$searchTerm;
+      $dealString = "parent=/deals, product_name*=".$searchTerm;
+      
+      if($x->limit) {
+      $limitSplit = round($x->limit / 2);
+        $pageString .= ",limit=".$limitSplit;
+        $dealString .= ",limit=".$limitSplit;
+      }
+      
+      $deals = wire('pages')->find($dealString);
+      $pages = wire('pages')->find($pageString);
+      $deallist = [];
+      foreach($deals as $deal) {
+        $x = $this->prepare_asset($deal);
+        array_push($deallist, $x);
+      }
+      foreach($pages as $page) {
+        $x = $this->prepare_asset($page);
+        array_push($deallist, $x);
+      }
+
+      output_json(true, '', $deallist);
+      
+
+    
+    break;
+    
+    case 'deal-pager' :
+      
+    $limit = 50;
+    $x = json_decode(file_get_contents('php://input'));
+    
+    if ($x->pageNumber > 1) {
+      $start = ($x->pageNumber * $limit) + 1;
+    }else {
+      $start = 0;
+    }
+    
+    $type = str_replace(",", "", $x->selectedFilters->merchant_category);
+    
+    $queryString = "parent=/deals, limit=".$limit. ", start=".$start;
+    
+    if($type) {
+      $tempstring = ",merchant_category*=";
+      foreach($type as $mer) {
+        $tempstring .= $mer."|";
+      }
+      
+      $queryString .= rtrim($tempstring, "|");
+    }
+    
+    error_log($queryString);
+    
+    $num = wire('pages')->count($queryString);
+    if($num == 0) {
+    
+    }
+    $deals = wire('pages')->find($queryString);
+      $deallist = [];
+      foreach($deals as $deal) {
+        $x = $this->prepare_asset($deal);
+        array_push($deallist, $x);
+      }
+
+      output_json(true, $queryString, $deallist);
+    
+    
+    break;
+    
+    case 'deal-matcher' :
+    
+    $x = json_decode(file_get_contents('php://input'));
+    $searchTerm = $x->searchTerm;
+    $newTerm = explode(' ', $searchTerm);
+    $tempString = ", product_name*=";
+    //foreach($newTerm as $term) {
+      //$tempString .= $term."|";
+    //}
+    $first = $newTerm[0];
+    $tempString .= $first."|".$searchTerm;
+    
+    //$queryString .= rtrim($tempstring, "|");
+    
+    $deals = wire('pages')->find("parent=/deals, limit=5".$tempString);
+      $deallist = [];
+      foreach($deals as $deal) {
+        $x = $this->prepare_asset($deal);
+        array_push($deallist, $x);
+      }
+
+      output_json(true, 'blah '.$tempString, $deallist);
+    
+    
+    
+    break;
+      
+      case 'get-all-plants':
+      $x = json_decode(file_get_contents('php://input'));
+      $searchstring = "parent=/plants";
+      
+      
+      if($x->limit) {
+        $limitSplit = $x->limit;
+        $searchstring .= ",limit=".$limitSplit;
+      }
+      $plants = wire('pages')->find($searchstring);
+      $plantlist = [];
+      foreach($plants as $plant) {
+        $x = $this->prepare_asset($plant);
+        array_push($plantlist, $x);
+      }
+
+      output_json(true, $plants, $plantlist); 
+
+      break;
+      
+      case 'get-plants':
+      
+        $x = json_decode(file_get_contents('php://input'));
+        $name = $x->name;
+        $type = $x->type;
+        $plantlist = [];
+        
+        if($name) {
+          $plants = wire('pages')->find("parent=/plants, title=".$name);
+        }else if($type) {
+          $plants = wire('pages')->find("parent=/plants, template=".$type);
+        }else {
+          $plants = wire('pages')->find("parent=/plants");
+        }
+        
+        foreach($plants as $plant) {
+          $y = $this->prepare_asset($plant);
+          array_push($plantlist, $y);
+        }
+      
+      output_json(true, '', $plantlist); 
+
+      break;
+      
+      case 'what-can-i-sow':
+      
+
+      $x = json_decode(file_get_contents('php://input'));
+      $month = $x->month;
+      $type = $x->type;
+      
+      if($x->mode == 'mini') {
+        $plants = wire('pages')->find("parent=/plants, template=".$type.",months_sow.title=".$month.",limit=".$x->mode);
+      }else {
+        $plants = wire('pages')->find("parent=/plants, template=".$type.",months_sow.title=".$month);
+      }
+      
+      //$plants = wire('pages')->find("parent=/plants, months_sow.title=".$month);
+      
+      $plantlist = [];
+      foreach($plants as $plant) {
+        $y = $this->prepare_asset($plant);
+        array_push($plantlist, $y);
+      }
+      
+      output_json(true, '', $plantlist); 
+
+
+      break;
+
+      //USER
+      //region
+      // case 'user/login':
+      // $user = wire('sanitizer')->name(wire('input')->post->user);
+      // $pass = wire('sanitizer')->name(wire('input')->post->pass);
+
+      // try {
+      //   if(wire('user')->isLoggedin()){         
+      //     wire('session')->logout();            
+      //   }
+      //   $user = wire('session')->login($user, $pass);
+      // } catch (Exception $e) {
+      //   output_json(false, '', 'Login failed');           
+      //   exit;
+      // }
+
+      // if($user->id) {
+      //   output_json(true, '', 'Successfully logged in');  
+      // } else {
+      //   output_json(false, '', 'Login failed', 'Login failed' );
+      // }
+
+      // break;
+
+      // case 'user/logout':
+
+      // wire('session')->logout();
+
+      // output_json(true, '', 'Successfully logged out');  
+
+      // break;
+
+      // case 'user/get':
+
+      // $user = wire('user');
+      // $user_array = $user->toArray();
+
+      // unset($user_array['data']['pass']); 
+      // unset($user_array['data']['roles']); 
+
+      // $user_array['data']['isSuperuser'] = wire('user')->hasRole('admin');
+      // $user_array['data']['isLoggedin'] = wire('user')->isLoggedin();
+      // $user_array['data']['isLocked'] = wire('user')->user_locked === 1;
+      // $user_array['data']['isInternal'] = $this->isInternal() && wire('user')->name === 'internal';
+      // $user_array['data']['permissions'] = array();
+
+      //   //export permissions only if user is not locked
+      //   //otherwise no permissions are granted
+      // if (wire('user')->user_locked !== 1) {
+      //   foreach (wire('pages')->find('template=permission, include=all') as $p) {
+      //     if($user->hasPermission($p->name)) {
+      //       $user_array['data']['permissions'][$p->name] = true;
+      //     }
+      //   }
+      // }
+
+      // foreach ($user->roles as $role) {
+      //   if($role->name === 'guest') { continue; }
+      //   $user_array['data']['role'] = $role->name;
+      // }
+
+      // output_json(true, '', $user_array['data']);  
+
+      //break;
+
+      case 'user/notifications/get':
+
+      $newsLastVisit = intval(wire('input')->news_last_visit);
+      $campaignsLastVisit = intval(wire('input')->campaigns_last_visit);
+
+      $cache = wire('modules')->get("MarkupCache");
+      if(!$output = $cache->get(md5(wire('user')->id . '-' . $newsLastVisit . $campaignsLastVisit), 2592000)) {
+
+        $news = wire('pages')->count("template=news, parent=/news, news_date>=$newsLastVisit");
+        $campaigns = wire('pages')->count("template=campaign, parent=/campaigns, campaign_date>=$campaignsLastVisit");
+
+        $output = array('total' => $news + $campaigns, 'news' => $news, 'campaigns' => $campaigns);
+
+        $output = serialize($output);
+
+        $cache->save($output);
+      }
+
+      $output = unserialize($output);
+
+      output_json(true, '', $output); 
+
+      break;
+      //endregion
+
+      //USERS
+      //region
+      case 'users/get':
+
+      if(!wire('user')->isLoggedin()) {
+        output_json(false, 0, 'You have to be logged in first');
+        exit;
+      } 
+
+      if(!wire('user')->hasRole('admin')) {
+        output_json(false, 0, 'You don\'t have enough permissions to run this operation!');
+        exit;
+      } 
+
+      $cache = wire('modules')->get("MarkupCache");
+      if(!$output = $cache->get(md5('users/get/' . (int)wire('input')->id), 2592000)) {
+
+        $expiry_interval = wire('pages')->get('template=settings_general')->expiry_interval;
+
+        $user = wire('pages')->get('template=user,id=' . (int)wire('input')->id);
+
+        $user_array = $user->toArray();
+
+        if(!$user->user_locked) {
+          $user_array['data']['expiry_date'] = strtotime('+'.$expiry_interval.' days', $user->date_created);
+        }
+
+        unset($user_array['data']['pass']); 
+        unset($user_array['data']['roles']); 
+
+        foreach ($user->roles as $role) {
+          if($role->name === 'guest') { continue; }
+          $user_array['data']['role'] = $role->name;
+        }
+
+        $output = serialize($user_array);
+
+        $cache->save($output);
+      }
+
+      $output = unserialize($output);
+
+      output_json(true, '', $output, null);  
+
+      break;
+      
+      case 'users/get/all':
+
+      if(!wire('user')->isLoggedin()) {
+        output_json(false, 0, 'You have to be logged in first', null);
+        exit;
+      } 
+
+      if(!wire('user')->hasRole('admin')) {
+        output_json(false, 0, 'You don\'t have enough permissions to run this operation!', null);
+        exit;
+      } 
+
+      $selector = 'template=user';
+      if(!empty(wire('input')->role)) {
+        $selector .= ',roles=' . intval(wire('input')->role);
+      }
+
+      $cache = wire('modules')->get("MarkupCache");
+      if(!$output = $cache->get(md5($selector), 2592000)) {
+
+        $users = wire('pages')->find($selector);
+
+        $output = array();
+        foreach ($users as $user) {
+
+            //exclude guest superuser and internal username
+          if($user->name === 'guest' || 
+            $user->hasRole('superuser') || 
+            $user->name === 'internal')
+            { continue; }
+
+          $user_array = $user->toArray();
+          unset($user_array['data']['pass']); 
+          foreach ($user->roles as $role) {
+            if($role->name === 'guest') { continue; }
+            $user_array['data']['role'] = $role->name;
+          }
+          $output[] = $user_array;
+        }
+
+        $output = serialize($output);
+
+        $cache->save($output);
+      }
+
+      $output = unserialize($output);
+
+      output_json(true, '', $output);  
+
+      break;
+
+      case 'users/update':
+
+      if(!wire('user')->isLoggedin()) {
+        output_json(false, 0, 'You have to be logged in first');
+        exit;
+      } 
+
+      if(!wire('user')->hasRole('admin')) {
+        output_json(false, 0, 'You don\'t have enough permissions to run this operation!');
+        exit;
+      } 
+
+      $user = wire('pages')->get('template=user,id=' . (int)wire('input')->post->id);
+      $user->of(false);
+      $user->first_name = wire('sanitizer')->name(wire('input')->post->first_name);
+      $user->last_name = wire('sanitizer')->name(wire('input')->post->last_name);
+      $user->email = wire('sanitizer')->email(wire('input')->post->email);
+
+      $is_locked = wire('input')->post->user_locked === true || wire('input')->post->user_locked === 'true' ? true : false;
+
+      if($user->user_locked !== $is_locked) {
+        $user->date_created = time();
+      }
+
+      $user->user_locked = $is_locked;
+
+      $user->pass = !empty(wire('input')->post->pass) ? wire('sanitizer')->text(wire('input')->post->pass) : $user->pass;
+      $user->roles->removeAll();
+      $user->addRole('guest');
+      $user->addRole(wire('sanitizer')->name(wire('input')->post->role));
+      $user->save();
+
+      output_json(true, '', 'User successfully updated');  
+
+      break;
+
+      case 'users/add':
+
+      if(!wire('user')->isLoggedin()) {
+        output_json(false, 0, 'You have to be logged in first');
+        exit;
+      } 
+
+      if(!wire('user')->hasRole('admin')) {
+        output_json(false, 0, 'You don\'t have enough permissions to run this operation!');
+        exit;
+      } 
+
+      if(wire('pages')->get("template=user,email='" . wire('sanitizer')->email(wire('input')->post->email) . "'")->id) {
+        output_json(false, 0, 'The specified email is already registered. Please use a different one.');
+        exit;          
+      }
+
+      if(wire('pages')->get("template=user,name='" . wire('sanitizer')->name(wire('input')->post->username) . "'")->id) {
+        output_json(false, 0, 'The username is already being used. Please user a different one.');
+        exit;          
+      }
+
+      $user = new User(); 
+      $user->of(false);
+      $user->name = wire('sanitizer')->name(wire('input')->post->username);
+      $user->first_name = wire('sanitizer')->name(wire('input')->post->first_name);
+      $user->last_name = wire('sanitizer')->name(wire('input')->post->last_name);
+      $user->email = wire('sanitizer')->email(wire('input')->post->email);
+      $user->pass = wire('sanitizer')->text(wire('input')->post->pass);
+      $user->date_created = time();
+      $user->addRole('guest');
+      $user->addRole(wire('sanitizer')->name(wire('input')->post->role));
+      $user->save();
+
+      output_json(true, '', 'User successfully added');  
+
+      break;
+
+      case '':
+
+      if(!wire('user')->isLoggedin()) {
+        output_json(false, 0, 'You have to be logged in first');
+      } 
+
+      if(!wire('user')->hasRole('admin')) {
+        output_json(false, 0, 'You don\'t have enough permissions to run this operation!');
+      } 
+
+      $user = wire('pages')->get("template=user,id='" . (int)wire('input')->id);
+
+      if(!$user->id) {
+        output_json(false, 0, 'The user could not be found!');
+      }
+
+      wire('users')->delete($user);
+
+      output_json(true, '', 'User successfully removed');  
+
+      break;
+      //endregion
+
+      //ROLES
+      //region
+      case 'roles/get':
+
+      if(!wire('user')->isLoggedin()) {
+        output_json(false, 0, 'You have to be logged in first');
+        exit;
+      } 
+
+      if(!wire('user')->hasRole('admin')) {
+        output_json(false, 0, 'You don\'t have enough permissions to run this operation!');
+        exit;
+      } 
+
+      $cache = wire('modules')->get("MarkupCache");
+      if(!$output = $cache->get(md5('roles/get'), 2592000)) {
+
+        $roles = wire('pages')->find( "template=role,name!='guest',name!='superuser'" );
+
+        $output = array();
+        foreach ($roles as $role) {
+         $output[] = $role->toArray();
+       }
+
+       $output = serialize($output);
+
+       $cache->save($output);
+     }
+
+     $output = unserialize($output);
+
+     output_json(true, '', $output, null, true, 3600);
+
+     break;
+      //endregion
+
+      //ASSETS
+      //region
+     case 'assets/check/title':
+
+     $title = wire('sanitizer')->text(wire('input')->title);
+     $exclude_id = isset(wire('input')->exclude_id) ? (int)wire('input')->exclude_id : null;
+
+     $cache = wire('modules')->get("MarkupCache");
+     if(!$output = $cache->get(md5('check/title/' . $title . $exclude_id), 30)) {
+
+      $output = wire('pages')->get( "parent=/assets,include=all,title=" . $title . (isset($exclude_id) ? ",id!=" . $exclude_id : ''));
+
+      $output = serialize($output);
+
+      $cache->save($output);
+    }
+
+    $output = unserialize($output);
+
+    if($output->id && !count($output->files)) {
+      output_json(false, '', 'An asset with this name already exists.', ['failed_asset' => true]);
+    }
+
+    if($output->id ) {
+      output_json(false, '', 'An asset with this name already exists.', ['failed_asset' => false]);
+    }
+
+    output_json(true, '', 'The name is valid', ['failed_asset' => false]);  
+
+    break;
+
+    case 'assets/archive':
+
+    if(!wire('user')->isLoggedin()) {
+      output_json(false, 0, 'You have to be logged in first');
+      exit;
+    } 
+
+    if(!wire('user')->hasRole('admin')) {
+      output_json(false, 0, 'You don\'t have enough permissions to run this operation!');
+      exit;
+    } 
+
+    $id = (int)wire('input')->post->id;
+
+    $page = wire('pages')->get( "id=$id" );
+
+    if(!$page->id) {
+      output_json(false, 1, "Page with id:$id not found!");       
+    }       
+
+    $page->of(false);
+
+    $page->parent = '/archive';
+
+    if(wire('pages')->get( "parent=/archive,name=".$page->name )->id) {
+      $page->name = $page->name . '-' .time();
+    }
+
+    $page->save();
+
+    $this->log($this->operation, $p->id);
+
+    output_json(true, '', 'Asset archived successfully');   
+
+    break;
+
+    case 'assets/thumb/set/default':
+
+    if(!wire('user')->isLoggedin()) {
+      output_json(false, 0, 'You have to be logged in first');
+      exit;
+    } 
+
+    $id = (int)wire('input')->post->id;
+
+    $page = wire('pages')->get( "id=$id" );
+
+    if(!$page->id) {
+      output_json(false, 1, "Page with id:$id not found!");        
+      exit;    
+    }   
+
+    $page->of(false);
+    $ext = pathinfo($page->files->first()->url(), PATHINFO_EXTENSION);
+    if(in_array ($ext, array('jpg', 'jpeg', 'png', 'gif', 'bmp'))) {
+      $filename = $page->files->first()->filename();
+      $thumb_path = wire('config')->paths->cache.'thumb-'.time().'.'.pathinfo($filename, PATHINFO_EXTENSION);
+      copy($filename, $thumb_path);
+      $page->thumb->removeAll();
+      $page->thumb->add($thumb_path);
+
+      unlink( $thumb_path );
+
+          // $image = new Pageimage(new Pageimages($page), $page->files->first()->filename());
+          // $page->thumb_url = 'http://' . wire('config')->httpHost . $image->width(750, array('quality' => 70, 'upscaling' => false, 'cropping' => 'north'))->url();
+    } else if(in_array ($ext, self::$config['available_default_thumbs'])) {
+      $page->thumb_url = wire('config')->urls->templates . self::$config['working_dir'] .'/assets/images/thumbs/' . $ext . '.jpg';
+    } else {
+      $page->thumb_url = wire('config')->urls->templates . self::$config['working_dir'] . '/assets/images/thumbs/default.png';          
+    }
+
+    $page->save();
+
+    output_json(true, '', 'Default thumbnail set successfully');   
+
+    break;
+
+    case 'assets/thumb/upload':
+
+    if(!wire('user')->isLoggedin()) {
+      output_json(false, 0, 'You have to be logged in first');
+      exit;
+    } 
+
+    if(!wire('user')->hasPermission('asset-upload')) {
+      output_json(false, 0, 'You don\'t have permissions to upload files!');
+      exit;
+    }
+
+    $allowedThumbExt = array( 'jpg', 'jpeg', 'gif', 'png', 'bmp' );
+
+    $id = (int)wire('input')->post->id;
+
+    $page = wire('pages')->get( "id=$id" );
+
+    if(!$page->id) {
+      output_json(false, 1, "Page with id:$id not found!");        
+      exit;    
+    }   
+
+    $upload_path = wire('config')->paths->cache;
+
+    $uploaded_file = new WireUpload( 'file' );
+    $uploaded_file->setMaxFiles( 1 );
+    $uploaded_file->setOverwrite( true );
+    $uploaded_file->setDestinationPath( $upload_path );
+    $uploaded_file->setValidExtensions( $allowedThumbExt );
+
+    $files = $uploaded_file->execute();
+
+    if ( !in_array(strtolower(pathinfo($_FILES["file"]["name"], PATHINFO_EXTENSION)), $allowedThumbExt) ) { 
+      output_json(false, 1, 'Only jpg, jpeg, gif, bmp and png files are allowed for thumbnails');
+      exit;
+    }
+    if ( !count( $files ) ) { 
+      output_json(false, 1, 'There was an error uploading the thumbnail!');
+      exit;
+    }
+
+    $page = wire('pages')->get( "id=$id" );
+
+    if(!$page->id) {
+      output_json(false, 1, 'Page with id:$id not found!');        
+      exit;    
+    }
+
+    $page->of(false);
+    $page->thumb->removeAll();
+
+    foreach ( $files as $filename ) {
+      $pathname = $upload_path . $filename;
+
+      rename($pathname, $upload_path . 'thumb.' . $ext = pathinfo($filename, PATHINFO_EXTENSION)); 
+      $pathname = $upload_path . 'thumb.' . $ext = pathinfo($filename, PATHINFO_EXTENSION);
+      $page->thumb = $pathname;
+
+      unlink( $pathname );
+    }
+
+    $page->thumb_url = null;
+
+    $page->save();
+
+    $page->toArray();
+
+    output_json(true, '', 'Thumbnail uploaded successful');  
+    exit;
+
+    break;
+
+    case 'assets/add':
+
+    if(!wire('user')->isLoggedin()) {
+      output_json(false, 0, 'You have to be logged in first');
+      exit;
+    } 
+
+    if(!wire('user')->hasPermission('asset-upload')) {
+      output_json(false, 0, 'You don\'t have permissions to upload files!');
+      exit;
+    } 
+
+    $assets_root = wire('pages')->get( "/assets" );
+    error_log("were here");
+    $title = wire('sanitizer')->text(wire('input')->post->title);
+    error_log($title);
+    $asset_main_category = wire('sanitizer')->text(wire('input')->post->asset_main_category);
+    $asset_master_brand_category = wire('sanitizer')->text(wire('input')->post->asset_master_brand_category);
+    $asset_channels_category = wire('sanitizer')->text(wire('input')->post->asset_channels_category);
+    $asset_channels_brand = wire('sanitizer')->text(wire('input')->post->asset_channels_brand);
+    $asset_products_product = wire('sanitizer')->text(wire('input')->post->asset_products_product);
+    $asset_products_category = wire('sanitizer')->text(wire('input')->post->asset_products_category);
+    $asset_campaigns_product_area = wire('sanitizer')->text(wire('input')->post->asset_campaigns_product_area);
+    $asset_campaigns_media = wire('sanitizer')->text(wire('input')->post->asset_campaigns_media);
+    $asset_campaigns_vehicle = wire('sanitizer')->text(wire('input')->post->asset_campaigns_vehicle);
+    $asset_initiatives_category = wire('sanitizer')->text(wire('input')->post->asset_initiatives_category);
+    $asset_initiatives_initiative = wire('sanitizer')->text(wire('input')->post->asset_initiatives_initiative);
+    $asset_content_content = wire('sanitizer')->text(wire('input')->post->asset_content_content);
+    $asset_content_document = wire('sanitizer')->text(wire('input')->post->asset_content_document);
+    $asset_to_replace = wire('sanitizer')->text(wire('input')->post->asset_to_replace);
+    $year = (int)wire('input')->post->year;
+    $quarter = wire('sanitizer')->text(wire('input')->post->quarter);
+    $filetype = wire('sanitizer')->text(wire('input')->post->filetype);
+    $country = wire('sanitizer')->text(wire('input')->post->country);
+    $asset_guideline = (int)wire('input')->post->asset_guideline;
+    $summary = wire('sanitizer')->textarea(wire('input')->post->summary);
+    $is_replacement = wire('input')->post->is_replacement === true || wire('input')->post->is_replacement === 'true' ? true : false;
+    $is_private = wire('input')->post->is_private === true || wire('input')->post->is_private === 'true' ? true : false;
+    $asset_export_to_international = wire('input')->post->asset_export_to_international === true || wire('input')->post->asset_export_to_international === 'true' ? true : false;
+    $asset_dark_background = wire('input')->post->asset_dark_background === true || wire('input')->post->asset_dark_background === 'true' ? true : false;
+    $comment = wire('sanitizer')->textarea(wire('input')->post->comment);
+    $international_format = wire('sanitizer')->text(wire('input')->post->international_format);
+    $international_header = wire('sanitizer')->text(wire('input')->post->international_header);
+    $international_campaign = (int)wire('input')->post->international_campaign;
+    $international_translation = wire('sanitizer')->text(wire('input')->post->international_translation);
+
+    if(empty($title) || empty($asset_main_category) || empty($filetype)) {
+      output_json(false, 0, 'Please fill in all the mandatory fields!', array('title'=> 'required', 'asset_main_category'=> 'required', 'filetype'=> 'required'));
+      exit;
+    }
+
+    $page = wire('pages')->get( "parent=/assets,include=all,title=" . $title);
+
+    if($page->id) {
+      output_json(false, 0, 'An asset with this name already exists. Please use a different title');
+      exit;
+    }
+
+    $page = new Page();
+    $page->template = wire('templates')->get( "asset" ); 
+    $page->parent = $assets_root; 
+
+    $page->title = $title;
+    $page->asset_main_category = $asset_main_category;
+    $page->asset_master_brand_category = $asset_master_brand_category;
+    $page->asset_channels_category = $asset_channels_category;
+    $page->asset_channels_brand = $asset_channels_brand;
+    $page->asset_products_product = $asset_products_product;
+    $page->asset_products_category = $asset_products_category;
+    $page->asset_campaigns_product_area = $asset_campaigns_product_area;
+    $page->asset_campaigns_media = $asset_campaigns_media;
+    $page->asset_campaigns_vehicle = $asset_campaigns_vehicle;
+    $page->asset_initiatives_category = $asset_initiatives_category;
+    $page->asset_initiatives_initiative = $asset_initiatives_initiative;
+    $page->asset_content_content = $asset_content_content;
+    $page->asset_content_document = $asset_content_document;
+    $page->asset_to_replace = $asset_to_replace;
+    $page->year = $year;
+    $page->quarter = $quarter;
+    $page->filetype = $filetype;
+    $page->country = $country;
+    $page->asset_guideline = $asset_guideline;
+    $page->summary = $summary;
+    $page->is_replacement = $is_replacement;
+    $page->is_private = $is_private;
+    $page->asset_dark_background = $asset_dark_background;
+    $page->comment = $comment;
+    $page->owner = wire('user')->id;
+    $page->addStatus(Page::statusUnpublished); 
+    $page->asset_export_to_international = $asset_export_to_international;
+
+    if($asset_export_to_international) {
+      $page->asset_international_format = wire('sanitizer')->text(wire('input')->post->international_format);
+      $page->asset_international_header = wire('sanitizer')->text(wire('input')->post->international_header);
+      $page->asset_international_campaign = wire('sanitizer')->text(wire('input')->post->international_campaign);
+      $page->asset_international_translation = wire('sanitizer')->text(wire('input')->post->international_translation);   
+    }
+
+    $page->asset_content_for_search = $this->getSearchContent(array($asset_main_category, $asset_master_brand_category, $asset_channels_category, $asset_channels_brand, $asset_products_product, $asset_products_category, $asset_campaigns_product_area, $asset_campaigns_media, $asset_campaigns_vehicle, $asset_initiatives_category, $asset_initiatives_initiative, $asset_content_content, $asset_content_document, $quarter, $filetype, $country, $asset_guideline), array($title, $year === 0 ? '' : $year, $summary));
+
+    $page->date_created = time();
+
+    $page->save();    
+
+    $page->toArray();
+
+    $this->log($this->operation, $page->id); 
+
+    output_json(true, '', array('id'=> $page->id));  
+
+    break;
+
+    case 'assets/upload':
+
+    error_log("version push 2");
+
+    if(!wire('user')->isLoggedin()) {
+      output_json(false, 0, 'You have to be logged in first');
+    } 
+
+    if(!wire('user')->hasPermission('asset-upload')) {
+      output_json(false, 0, 'You don\'t have permissions to upload files!');
+    }
+
+    $id = (int)wire('input')->post->id;
+
+    $page = wire('pages')->get( "id=$id" );
+
+    if(!$page->id) {
+      output_json(false, 1, "Page with id:$id not found!");        
+      exit;    
+    }   
+
+    $upload_path = wire('config')->paths->cache;
+
+    $uploaded_file = new WireUpload( 'file' );
+    $uploaded_file->setMaxFiles( 5 );
+    $uploaded_file->setOverwrite( true );
+    $uploaded_file->setDestinationPath( $upload_path );
+    $uploaded_file->setValidExtensions( array( 'jpg', 'jpeg', 'gif','tiff','tif','png','psd','psb','zip','rar','tar','gzip','txt','doc','docx','xls','xlsx','ppt','pptx','pdf','rtf','mp3','ogg','wav','mov','mp4','f4v','flv','c4d','swf','eps','avi','ai','mpg', 'tga', 'ttf' ) );
+
+    $files = $uploaded_file->execute();
+
+    if ( !count( $files ) ) { 
+      $page->delete();
+      output_json(false, 1, 'You need to select at least one file!');
+    }
+
+    if($uploaded_file->getErrors()){
+
+          // remove files uploaded
+      foreach($files as $filename) unlink($upload_path . $filename);
+
+          // get the errors
+          if(count($uploaded_file->getErrors()) > 1){ // if multiple error
+            foreach($uploaded_file->getErrors() as $e) {
+              $errors[$file_field][] = $e;
+            }
+          } else { // if single error
+            $errors[$file_field] = $uploaded_file->getErrors();
+          }
+
+          $page->delete();
+
+          output_json(false, 0, 'Errors occured during upload', $errors);  
+        }
+
+        $page->of(false);
+        
+        foreach ( $files as $filename ) {
+          $pathname = $upload_path . $filename;
+          $page->files->add( $pathname );   
+          $page->asset_filesize = filesize($pathname);
+          $page->asset_filesize_pretty = $this->byte_convert(filesize($pathname));
+          unlink( $pathname );
+        }
+        $p = $page;
+        if(wire('user')->hasRole('admin')){
+          error_log("user is admin, page id below:");
+          error_log($p->asset_international_format);
+          //wire('input')->post->id
+          $p->removeStatus(Page::statusUnpublished);
+          $p->date_approved = time();
+          $p->save();
+
+          //check if is a campaigns asset and is market to export to the international brand site
+          error_log("export international set to ".$p->asset_export_to_international);
+          if($p->asset_export_to_international == 1) {
+            error_log("asset marked for international export");
+            $body_data = array(
+              'Description' =>  $p->summary,
+              'FilePath' => Api::$config['assets_domain'] . '/api/download/single/' . $p->id,
+              'Format' => $p->asset_international_format,
+              'Header' => $p->asset_international_header,
+              'CampaignId' => explode('-', $p->asset_international_campaign)[1],
+              'Title' => $p->title,
+              'Translation' => $p->asset_international_translation
+              );
+
+            $body_data = json_encode($body_data); 
+
+            $ch = curl_init();
+            if($ch) {                                                         
+              curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");    
+              curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);                                                              
+              curl_setopt($ch, CURLOPT_POSTFIELDS, $body_data);      
+              curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+              curl_setopt($ch, CURLOPT_HTTPHEADER, array(                               
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($body_data),     
+                'Authorization-Token: ' . Api::$config['international_site']['auth']
+                ));
+
+              if(!curl_setopt($ch, CURLOPT_URL, Api::$config['international_site']['campaign_push_url'])) {
+                output_json(true, '', array('id'=> $p->id, 'international_id' => -1), array('Curl error'));             
+              }
+              $output = curl_exec($ch);
+              curl_close($ch);
+              
+              $output = json_decode($output, true);
+              
+              output_json(true, '', array('id'=> $p->id, 'international_id' => $output['id']));  
+
+            } else {
+              output_json(true, '', array('id'=> $p->id, 'international_id' => -1), array('Curl error'));  
+            }
+
+          }
+
+        }
+
+        $page->save();
+
+        $page->toArray(); 
+
+        output_json(true, '', array('id'=> $page->id));  
+        
+        break;
+
+        case 'assets/update':
+        error_log("update called");
+        if(!wire('user')->isLoggedin()) {
+          output_json(false, 0, 'You have to be logged in first');
+          exit;
+        } 
+        
+        if(!wire('user')->hasRole('admin')) {
+          output_json(false, 0, 'You don\'t have permissions to update assets!');
+          exit;
+        }
+
+        $id = (int)wire('input')->post->id;
+        $page = wire('pages')->get( "id=$id, parent=/assets, include=all" );
+        if(!$page->id) { 
+          output_json(false, 0, 'The specified page can\'t be found!');
+          exit;
+        }
+
+        $title = wire('sanitizer')->text(wire('input')->post->title);
+        $asset_main_category = wire('sanitizer')->text(wire('input')->post->asset_main_category);
+        $asset_master_brand_category = wire('sanitizer')->text(wire('input')->post->asset_master_brand_category);
+        $asset_channels_category = wire('sanitizer')->text(wire('input')->post->asset_channels_category);
+        $asset_channels_brand = wire('sanitizer')->text(wire('input')->post->asset_channels_brand);
+        $asset_products_product = wire('sanitizer')->text(wire('input')->post->asset_products_product);
+        $asset_products_category = wire('sanitizer')->text(wire('input')->post->asset_products_category);
+        $asset_campaigns_product_area = wire('sanitizer')->text(wire('input')->post->asset_campaigns_product_area);
+        $asset_campaigns_media = wire('sanitizer')->text(wire('input')->post->asset_campaigns_media);
+        $asset_campaigns_vehicle = wire('sanitizer')->text(wire('input')->post->asset_campaigns_vehicle);
+        $asset_initiatives_category = wire('sanitizer')->text(wire('input')->post->asset_initiatives_category);
+        $asset_initiatives_initiative = wire('sanitizer')->text(wire('input')->post->asset_initiatives_initiative);
+        $asset_content_content = wire('sanitizer')->text(wire('input')->post->asset_content_content);
+        $asset_content_document = wire('sanitizer')->text(wire('input')->post->asset_content_document);
+        $asset_to_replace = wire('sanitizer')->text(wire('input')->post->asset_to_replace);
+        $year = (int)wire('input')->post->year;
+        $quarter = wire('sanitizer')->text(wire('input')->post->quarter);
+        $filetype = wire('sanitizer')->text(wire('input')->post->filetype);
+        $country = wire('sanitizer')->text(wire('input')->post->country);
+        $asset_guideline = (int)wire('input')->post->asset_guideline;
+        $summary = wire('sanitizer')->textarea(wire('input')->post->summary);
+        $is_replacement = wire('input')->post->is_replacement === true || wire('input')->post->is_replacement === 'true' ? true : false;
+        $is_private = wire('input')->post->is_private === true || wire('input')->post->is_private === 'true' ? true : false;
+        $asset_export_to_international = wire('input')->post->asset_export_to_international === true || wire('input')->post->asset_export_to_international === 'true' ? true : false;
+        $asset_dark_background = wire('input')->post->asset_dark_background === true || wire('input')->post->asset_dark_background === 'true' ? true : false;
+        $comment = wire('sanitizer')->textarea(wire('input')->post->comment);
+        $asset_comment_approval = wire('sanitizer')->textarea(wire('input')->post->asset_comment_approval);
+
+        if(isset(wire('input')->post->saver)){
+          $international_format = wire('sanitizer')->text(wire('input')->post->international_format);
+          $international_header = wire('sanitizer')->text(wire('input')->post->international_header);
+          $international_campaign = wire('input')->post->international_campaign;
+          $international_translation = wire('sanitizer')->text(wire('input')->post->international_translation);
+        }
+        
+
+        $page->of(false);
+
+        if(isset(wire('input')->post->title)) {
+          $page->title = $title;
+        } 
+
+        if(isset(wire('input')->post->asset_main_category)){
+          $values = explode('|', $asset_main_category);
+          $page->asset_main_category->removeAll();
+          foreach ($values as $value) {
+           $page->asset_main_category->add($value);
+         }
+       }
+       if(isset(wire('input')->post->asset_channels_category)){
+        $values = explode('|', $asset_channels_category);
+        $page->asset_channels_category->removeAll();
+        foreach ($values as $value) {
+         $page->asset_channels_category->add($value);
+       }
+     }
+     if(isset(wire('input')->post->asset_master_brand_category)){
+      $values = explode('|', $asset_master_brand_category);
+      $page->asset_master_brand_category->removeAll();
+      foreach ($values as $value) {
+       $page->asset_master_brand_category->add($value);
+     }
+   }
+   if(isset(wire('input')->post->asset_channels_brand)){
+    $values = explode('|', $asset_channels_brand);
+    $page->asset_channels_brand->removeAll();
+    foreach ($values as $value) {
+     $page->asset_channels_brand->add($value);
+   }
+ }
+ if(isset(wire('input')->post->asset_products_product)){
+  $values = explode('|', $asset_products_product);
+  $page->asset_products_product->removeAll();
+  foreach ($values as $value) {
+   $page->asset_products_product->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_products_category)){
+  $values = explode('|', $asset_products_category);
+  $page->asset_products_category->removeAll();
+  foreach ($values as $value) {
+   $page->asset_products_category->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_campaigns_product_area)){
+  $values = explode('|', $asset_campaigns_product_area);
+  $page->asset_campaigns_product_area->removeAll();
+  foreach ($values as $value) {
+   $page->asset_campaigns_product_area->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_campaigns_media)){
+  $values = explode('|', $asset_campaigns_media);
+  $page->asset_campaigns_media->removeAll();
+  foreach ($values as $value) {
+   $page->asset_campaigns_media->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_campaigns_vehicle)){
+  $values = explode('|', $asset_campaigns_vehicle);
+  $page->asset_campaigns_vehicle->removeAll();
+  foreach ($values as $value) {
+   $page->asset_campaigns_vehicle->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_initiatives_category)){
+  $values = explode('|', $asset_initiatives_category);
+  $page->asset_initiatives_category->removeAll();
+  foreach ($values as $value) {
+   $page->asset_initiatives_category->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_initiatives_initiative)){
+  $values = explode('|', $asset_initiatives_initiative);
+  $page->asset_initiatives_initiative->removeAll();
+  foreach ($values as $value) {
+   $page->asset_initiatives_initiative->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_content_content)){
+  $values = explode('|', $asset_content_content);
+  $page->asset_content_content->removeAll();
+  foreach ($values as $value) {
+   $page->asset_content_content->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_content_document)){
+  $values = explode('|', $asset_content_document);
+  $page->asset_content_document->removeAll();
+  foreach ($values as $value) {
+   $page->asset_content_document->add($value);
+ }
+}
+if(isset(wire('input')->post->quarter)){
+  $values = explode('|', $quarter);
+  $page->quarter->removeAll();
+  foreach ($values as $value) {
+   $page->quarter->add($value);
+ }
+}
+if(isset(wire('input')->post->filetype)){
+  $values = explode('|', $filetype);
+  $page->filetype->removeAll();
+  foreach ($values as $value) {
+   $page->filetype->add($value);
+ }
+}
+if(isset(wire('input')->post->country)){
+  $values = explode('|', $country);
+  $page->country->removeAll();
+  foreach ($values as $value) {
+   $page->country->add($value);
+ }
+}
+if(isset(wire('input')->post->asset_guideline)){
+  $values = explode('|', $asset_guideline);
+  $page->asset_guideline->removeAll();
+  foreach ($values as $value) {
+   $page->asset_guideline->add($value);
+ }
+}
+
+//
+
+$page->year = $year;
+$page->asset_guideline = $asset_guideline;
+$page->summary = $summary;
+$page->is_replacement = $is_replacement;
+$page->is_private = $is_private;
+$page->asset_export_to_international = $asset_export_to_international;
+$page->asset_dark_background = $asset_dark_background;
+$page->comment = $comment;
+$page->asset_comment_approval = $asset_comment_approval;
+
+//international addition
+if(isset(wire('input')->post->saver)){
+        $page->asset_international_format = $international_format;
+        $page->asset_international_header = $international_header;
+        $page->asset_international_campaign = $international_campaign;
+        $page->asset_international_translation = $international_campaign;  
+} 
+
+$page->asset_content_for_search = $this->getSearchContent(array($asset_main_category, $asset_master_brand_category, $asset_channels_category, $asset_channels_brand, $asset_products_product, $asset_products_category, $asset_campaigns_product_area, $asset_campaigns_media, $asset_campaigns_vehicle, $asset_initiatives_category, $asset_initiatives_initiative, $asset_content_content, $asset_content_document, $quarter, $filetype, $country, $asset_guideline), array($title, $year === 0 ? '' : $year, $summary));
+
+$page->save();   
+
+if(isset(wire('input')->post->saver)){
+  if($page->asset_export_to_international) {
+
+    $body_data = array(
+      'Description' =>  $page->summary,
+      'FilePath' => Api::$config['assets_domain'] . '/api/download/single/' . $page->id,
+      'Format' => $page->asset_international_format,
+      'Header' => $page->asset_international_header,
+      'CampaignId' => explode('-', $page->asset_international_campaign)[1],
+      'Title' => $page->title,
+      'Translation' => $page->asset_international_translation
+      );
+
+    $body_data = json_encode($body_data); 
+
+    $ch = curl_init();
+    if($ch) {  
+      error_log("curling");                                                       
+      curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");    
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);                                                              
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $body_data);      
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array(                               
+        'Content-Type: application/json',
+        'Content-Length: ' . strlen($body_data),     
+        'Authorization-Token: ' . Api::$config['international_site']['auth']
+        ));
+
+      if(!curl_setopt($ch, CURLOPT_URL, Api::$config['international_site']['campaign_push_url'])) {
+        output_json(true, '', array('id'=> $page->id, 'international_id' => -1), array('Curl error'));             
+      }
+      $output = curl_exec($ch);
+      curl_close($ch);
+      
+      $output = json_decode($output, true);
+      
+      output_json(true, '', array('id'=> $page->id, 'international_id' => $output['id']));  
+
+    } else {
+      output_json(true, '', array('id'=> $page->id, 'international_id' => -1), array('Curl error'));  
+    }
+
+  }
+}
+
+$this->log($this->operation, $page->id); 
+
+output_json(true, '', 'Asset successfully updated');  
+
+break;
+
+case 'assets/approve':
+
+error_log("approve method hit");
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+
+if(!wire('user')->hasRole('admin')) {
+  output_json(false, 0, 'You don\'t have permissions to approve assets!');
+  exit;
+} 
+
+$id = (int)wire('input')->post->id;
+
+if(!id) {
+  output_json(false, 0, 'You have to specify a valid id');
+  exit;
+}
+
+$p = wire('pages')->get( "id=$id" );
+if(!$p->id) {
+  output_json(false, 0, 'The page with id:$id doesn\'t exist');
+  exit;
+}
+
+$p->of(false);
+
+$p->removeStatus(Page::statusUnpublished);
+$p->date_approved = time();
+
+$owner = wire('pages')->get('template=user,id='.$p->owner->id);
+
+$p->save();  
+
+$this->log($this->operation, $p->id);
+
+$this->mail(array('type'=>'asset.approve', 'email' => $owner->email, 'title' => $p->title));
+
+        //check if is a campaigns asset and is market to export to the international brand site
+error_log("summary below");
+error_log($p->summary);
+
+if($p->asset_export_to_international) {
+   error_log("is marked for export");
+  $body_data = array(
+    'Description' =>  $p->summary,
+    'FilePath' => Api::$config['assets_domain'] . '/api/download/single/' . $p->id,
+    'Format' => $p->asset_international_format,
+    'Header' => $p->asset_international_header,
+    'CampaignId' => explode('-', $p->asset_international_campaign)[1],
+    'Title' => $p->title,
+    'Translation' => $p->asset_international_translation
+    );
+
+  $body_data = json_encode($body_data); 
+  error_log("body data below");
+  error_log($body_data);
+  $ch = curl_init(); 
+  
+  if($ch) {     
+                                                   
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");    
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);                                                              
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $body_data);      
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(                               
+      'Content-Type: application/json',
+      'Content-Length: ' . strlen($body_data),     
+      'Authorization-Token: ' . Api::$config['international_site']['auth']
+      ));
+
+    if(!curl_setopt($ch, CURLOPT_URL, Api::$config['international_site']['campaign_push_url'])) {
+      output_json(true, '', array('id'=> $p->id, 'international_id' => -1), array('Curl error'));             
+    }
+    $output = curl_exec($ch);
+    curl_close($ch);
+
+    $output = json_decode($output, true);
+
+    output_json(true, '', array('id'=> $p->id, 'international_id' => $output['id']));  
+
+  } else {
+    output_json(true, '', array('id'=> $p->id, 'international_id' => -1), array('Curl error'));  
+  }
+
+}
+
+output_json(true, '', 'Asset approved successfully');  
+
+break;
+
+case 'assets/reject':
+
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+if(!wire('user')->hasRole('admin')) {
+  output_json(false, 0, 'You don\'t have enough permissions to run this operation!');
+  exit;
+} 
+
+$comment = wire('sanitizer')->selectorValue(wire('input')->post->asset_comment_approval);
+
+$id = (int)wire('input')->post->id;
+
+if(!id) {
+  output_json(false, 0, 'You must specify a valid id');
+  exit;
+}
+
+$p = wire('pages')->get( "id=$id" );
+if(!$p->id) {
+  output_json(false, 0, 'The page with id:$id doesn\'t exist');
+  exit;
+}
+
+$owner = wire('pages')->get('template=user,id='.$p->owner->id);
+
+$p->delete();
+
+$this->log($this->operation, $p->id);
+
+$this->mail(array('type'=>'asset.reject', 'comment'=> $comment, 'email' => $owner->email, 'title' => $p->title));
+
+output_json(true, '', 'Asset rejected successfully');  
+
+break;
+
+case 'assets/get':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+}
+
+if(wire('user')->user_locked) {
+  output_json(false, 0, 'Your account is locked! Please contact the brand team.');
+  exit;
+} 
+
+$id = trim(wire('sanitizer')->textarea(wire('input')->id));
+$titlePre = trim(wire('sanitizer')->text(wire('input')->title));
+//$title =  htmlspecialchars($titlePre, ENT_QUOTES);
+
+$title = addslashes($titlePre);
+
+$asset_main_category = wire('sanitizer')->textarea(wire('input')->asset_main_category);
+$asset_master_brand_category = wire('sanitizer')->textarea(wire('input')->asset_master_brand_category);
+$asset_channels_category = wire('sanitizer')->textarea(wire('input')->asset_channels_category);
+$asset_channels_brand = wire('sanitizer')->textarea(wire('input')->asset_channels_brand);
+$asset_products_product = wire('sanitizer')->textarea(wire('input')->asset_products_product);
+$asset_products_category = wire('sanitizer')->textarea(wire('input')->asset_products_category);
+$asset_campaigns_product_area = wire('sanitizer')->textarea(wire('input')->asset_campaigns_product_area);
+$asset_campaigns_media = wire('sanitizer')->textarea(wire('input')->asset_campaigns_media);
+$asset_campaigns_vehicle = wire('sanitizer')->textarea(wire('input')->asset_campaigns_vehicle);
+$asset_initiatives_category = wire('sanitizer')->textarea(wire('input')->asset_initiatives_category);
+$asset_initiatives_initiative = wire('sanitizer')->textarea(wire('input')->asset_initiatives_initiative);
+$asset_content_content = wire('sanitizer')->textarea(wire('input')->asset_content_content);
+$asset_content_document = wire('sanitizer')->textarea(wire('input')->asset_content_document);
+$year = wire('sanitizer')->text(wire('input')->year);
+$quarter = wire('sanitizer')->text(wire('input')->quarter);
+$filetype = wire('sanitizer')->textarea(wire('input')->filetype);
+$country = wire('sanitizer')->textarea(wire('input')->country);
+$is_replacement = wire('sanitizer')->text(wire('input')->is_replacement);
+$date_created = wire('sanitizer')->text(wire('input')->date_created);
+
+$page = !empty(wire('input')->page) ? (int)wire('input')->page : 1;
+$items_per_page =  !empty(wire('input')->items_per_page) ? (int)wire('input')->items_per_page : $this->items_per_page;
+$start = ($page - 1) * $items_per_page;
+$start = $start < $items_per_page ? 0 : $start;
+
+if($page !== -1) {
+  $selector = "template=asset,parent=/assets/,sort=-date_created,start=$start,limit=".$items_per_page;
+}
+
+if(!empty($title)) {
+  if(is_numeric($title) && intval($title) > 10000) {
+    $selector = $selector . ",id=$title";
+  } else {
+    $selector = $selector . ",asset_content_for_search~='$title'";
+  }
+}
+$selector = !empty($id) ? $selector . ',id=' . $id : $selector;
+$selector = !empty($asset_main_category) ? $selector . ',asset_main_category=' . $asset_main_category : $selector;
+$selector = !empty($asset_master_brand_category) ? $selector . ',asset_master_brand_category=' . $asset_master_brand_category : $selector;
+$selector = !empty($asset_channels_category) ? $selector . ',asset_channels_category=' . $asset_channels_category : $selector;
+$selector = !empty($asset_channels_brand) ? $selector . ',asset_channels_brand=' . $asset_channels_brand : $selector;
+$selector = !empty($asset_products_product) ? $selector . ',asset_products_product=' . $asset_products_product : $selector;
+$selector = !empty($asset_products_category) ? $selector . ',asset_products_category=' . $asset_products_category : $selector;
+$selector = !empty($asset_campaigns_product_area) ? $selector . ',asset_campaigns_product_area=' . $asset_campaigns_product_area : $selector;
+$selector = !empty($asset_campaigns_media) ? $selector . ',asset_campaigns_media=' . $asset_campaigns_media : $selector;
+$selector = !empty($asset_campaigns_vehicle) ? $selector . ',asset_campaigns_vehicle=' . $asset_campaigns_vehicle : $selector;
+$selector = !empty($asset_initiatives_category) ? $selector . ',asset_initiatives_category=' . $asset_initiatives_category : $selector;
+$selector = !empty($asset_initiatives_initiative) ? $selector . ',asset_initiatives_initiative=' . $asset_initiatives_initiative : $selector;
+$selector = !empty($asset_content_content) ? $selector . ',asset_content_content=' . $asset_content_content : $selector;
+$selector = !empty($asset_content_document) ? $selector . ',asset_content_document=' . $asset_content_document : $selector;
+$selector = !empty($year) ? $selector . ',year=' . $year : $selector;
+$selector = !empty($quarter) ? $selector . ',quarter=' . $quarter : $selector;
+$selector = !empty($filetype) ? $selector . ',filetype=' . $filetype : $selector;
+$selector = !empty($country) ? $selector . ',country=' . $country : $selector;
+        //$selector = !empty($is_replacement) ? $selector . ',is_replacement=' . $is_replacement : $selector;
+$selector = !empty($date_created) ? $selector . ',date_created=' . $date_created : $selector;
+
+if(!wire('user')->hasPermission('view-private')) {
+  $selector .= ",is_private=0";
+}
+
+        //$timer = Debug::timer();
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5($selector), 60 * 168)) {
+
+  $total = wire('pages')->count($selector);
+  $assets = wire('pages')->find($selector);
+  $output = array();
+
+  foreach ($assets as $asset) {
+
+    $output[] = $this->prepare_asset($asset);
+  }
+
+  $output = array('total'=>$total - $removed, 'items_per_page'=>$items_per_page, 'pages'=>ceil($total / $items_per_page), 'page'=>$page, 'records'=>$output);
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);
+        //PC::debug(  Debug::timer($timer));
+
+output_json(true, '', $output, null, true, 5);  
+
+break;
+
+case 'assets/get/awaiting':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+
+if(!wire('user')->hasRole('admin')) {
+  output_json(false, 0, 'You don\'t have permissions to upload files!');
+  exit;
+} 
+
+$selector = "template=asset,parent=/assets/,sort=-date_created,status=unpublished,files!=''";
+$page = 1;
+
+if(!empty(wire('input')->get->page)) {
+  $page =  (int)wire('input')->get->page;
+  $start = ($page - 1) * $this->items_per_page;
+  $start = $start < $this->items_per_page ? 0 : $start;
+}
+
+if(!empty(wire('input')->get->category)) {
+  $selector.=',asset_main_category='.intval(wire('input')->get->category);
+}
+
+if($page !== -1) {
+  $selector .= ",start=$start,limit=".$this->items_per_page;
+}
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5($selector), 2592000)) {
+
+  $total = wire('pages')->count($selector);
+  $assets = wire('pages')->find($selector);
+  $output = array();
+
+  foreach ($assets as $asset) {
+    $output[] = $this->prepare_asset($asset);
+  }
+
+  $output = array('total'=>$total - $removed, 'items_per_page'=>$items_per_page, 'pages'=>ceil($total / $items_per_page), 'page'=>$page, 'records'=>$output);
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);
+
+output_json(true, '', $output);   
+
+break;
+
+case 'assets/report/add':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+
+if(wire('user')->user_locked) {
+  output_json(false, 0, 'Your account is locked! Please contact the brand team');
+} 
+
+$now = time();
+
+$p = new Page(); 
+$p->template = 'issue'; 
+$p->parent = '/issues'; 
+$p->title = wire('user')->first_name .' '. wire('user')->last_name . ' | ' . date('Y-m-d | H:i:s', $now);
+$p->asset = (int)wire('input')->post->id;
+$p->owner = wire('user')->id;
+$p->summary = wire('sanitizer')->text(wire('input')->post->comment);
+
+$p->save();    
+
+output_json(true, 0, 'Issue reported');
+
+break;
+
+case 'assets/reports/get':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+
+if(wire('user')->user_locked) {
+  output_json(false, 0, 'Your account is locked! Please contact the brand team.');
+  exit;
+} 
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5('issues/get'), 2592000)) {
+
+  $issues = wire('pages')->find( "template=issue,parent=/issues,sort=-created" );
+
+  $output = array();
+  foreach ($issues as $issue) {
+    $issue_array = $issue->toArray();
+    $issue_array['data']['owner'] = $issue->owner->toArray();
+    unset($issue_array['data']['owner']['data']['pass']); 
+    unset($issue_array['data']['owner']['data']['roles']); 
+    if($issue->asset->id) {
+      $issue_array['data']['asset'] = $issue->asset->toArray();
+    }
+    $output[] = $issue_array;
+  }
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);        
+
+output_json(true, '', $output, null, true, 600); 
+
+break;
+
+case 'assets/report/close':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+
+if(wire('user')->user_locked) {
+  output_json(false, 0, 'Your account is locked! Please contact the brand team.');
+  exit;
+} 
+
+$issue = wire('pages')->get('template=issue,id='.(int)wire('input')->post->id);
+
+if(!$issue->id) {
+  output_json(false, 0, 'The issue with id '. (int)wire('input')->post->id . ' could not be found'); 
+  exit;         
+}
+
+$issue->of(false);
+
+$issue->addStatus(Page::statusUnpublished); 
+
+$issue->save();
+
+output_json(true, '', 'Issue successfully closed');  
+
+break;
+      //endregion
+
+      //FEEDBACK
+      //region
+
+case 'feedback/add':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+
+if(wire('user')->user_locked) {
+  output_json(false, 0, 'Your account is locked! Please contact the brand team.');
+  exit;
+} 
+
+$p = new Page(); 
+$p->template = 'feedback'; 
+$p->parent = '/feedback'; 
+$p->title = date('Y-m-d | H:i:s', time());
+$p->summary = wire('sanitizer')->textarea(wire('input')->comment);
+
+$p->save();  
+
+$this->mail(array('type' => 'feedback.notify.brandteam', 'name' => wire('user')->first_name .' '. wire('user')->last_name, 'email' => wire('user')->email, 'comment' => wire('sanitizer')->textarea(wire('input')->comment)));
+
+output_json(true, 0, 'Feedback added');
+
+break;
+      //endregion
+
+      //NEWS
+      //region
+case 'news/campaigns/get':      
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+}
+
+if(wire('user')->user_locked) {
+  output_json(false, 0, 'Your account is locked! Please contact the brand team.');
+  exit;
+} 
+
+$page = !empty(wire('input')->get->page) ? (int)wire('input')->get->page : 1;
+$items_per_page =  !empty(wire('input')->get->items_per_page) ? (int)wire('input')->get->items_per_page : $this->items_per_page;
+$start = ($page - 1) * $items_per_page;
+$start = $start < $items_per_page ? 0 : $start;
+
+$selector = "template=campaign,parent=/campaigns/,sort=-campaign_date,start=$start,limit=".$items_per_page;
+
+if(!empty(wire('input')->get->title)) {
+  $selector .= ",title%=".wire('sanitizer')->text(wire('input')->get->title);
+}
+
+if(!wire('user')->hasPermission('view-private')) {
+  $selector .= ',is_private=0';
+}
+
+$quarter = wire('sanitizer')->text(wire('input')->get->quarter);
+$year = wire('sanitizer')->text(wire('input')->get->year);
+$country = wire('sanitizer')->text(wire('input')->get->country);
+
+if(!empty($year)){
+  $starttime = mktime(0, 0, 0, 1, 1, $year);
+  $endtime = mktime(0, 0, 0, 12, 31, $year);
+}        
+
+if(!empty($quarter)){
+  $quarter_page = wire('pages')->get("id=$quarter,template=select"); 
+  $monthstart = (int)str_replace('q', '', $quarter_page->select_value) * 3 - 2;
+  $date = new DateTime("$year-$monthstart-01"); 
+  $starttime = $date->modify('-'.(($date->format('n') - 1)%3).' month')->modify('first day of this month')->getTimestamp(); 
+  $endtime = $date->modify('+2 month')->modify('last day of this month')->getTimestamp();
+}
+
+if(!empty($year) || !empty($quarter)){
+  $selector .= ',campaign_date>' . $starttime . ',campaign_date<' . $endtime;
+}
+
+if(!empty($country)){
+  $selector .= ',country=' . $country;
+}
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5($selector), 2592000)) {
+
+  $total = wire('pages')->count($selector);
+  $campaigns = wire('pages')->find($selector);
+  $output = array();
+
+  foreach ($campaigns as $campaign) {
+    $campaign_array = $campaign->toArray();
+    $campaign_array['data']['excerpt'] = Sky::excerpt($campaign_array['data']['content']);
+    $output[] = $campaign_array;
+  }
+
+  $output = array('total'=>$total, 'items_per_page'=>$items_per_page, 'pages'=>ceil($total / $items_per_page), 'page'=>$page, 'records'=>$output);
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);
+
+output_json(true, '', $output, null, true, 300);  
+
+break;
+
+case 'news/get':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+}
+
+if(wire('user')->user_locked) {
+  output_json(false, 0, 'Your account is locked! Please contact the brand team.');
+  exit;
+} 
+
+$last_item = !empty(wire('input')->get->last_id) ? (int)wire('input')->get->last_id : null;
+$selector = 'template=news,parent=/news,sort=-news_date';
+
+if($last_item) {
+  $selector .= ",id=$last_item";
+  $news = wire('pages')->get($selector)->next;
+} else {
+  $news = wire('pages')->get($selector);
+}
+
+$cache = wire('modules')->get("MarkupCache");
+        //include private status in the cache id otherwise it will server same content to all users
+if(!$output = $cache->get(md5($selector . '/' . wire('user')->hasPermission('view-private')), 2592000)) {
+
+  $output = array();
+  while($news->id && count($output) < 4) { 
+    if(!wire('user')->hasPermission('view-private') && $news->is_private) {
+      $news = $news->next;
+      continue;
+    }
+    $stamp = date('j', $news->news_date);
+    if(empty($output[$stamp])) {
+      if(count($output) === 3) {
+        break;
+      }
+      $output[$stamp] = array();
+    }
+    $last_id = $news->id;
+    $asset_array = $news->toArray();
+
+    $asset_array['day'] = date('d', $news->news_date);
+    $asset_array['month'] = date('M', $news->news_date);
+
+    $asset_array['data']['images'] = array();
+
+    $output[$stamp][] = $asset_array;
+
+    $news = $news->next;
+  }
+
+  $output2 = array();
+  $index = 0;
+  foreach ($output as $key => $value) {
+    $output2[$index++] = $value;
+  }
+
+  $output = array('last_id' => $last_id, 'records' => $output2);
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);
+
+output_json(true, '', $output, null, true, 300);  
+
+break;
+      //endregion
+
+      //TEAM
+      //region
+case 'team/get':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+}
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5('team'), 2592000)) {
+
+  $team = wire('pages')->get('/team');
+
+  $output = $team->toArray();
+  $output['data']['member'] = array();
+  foreach ($team->member as $member) {
+    $data = $member->toArray();
+    $data['data']['image'] = $member->team_member_image->url;
+    $output['data']['member'][] = $data;
+  }
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);   
+
+output_json(true, '', $output, null, true, 600);    
+
+break;
+        //endregion
+
+      //OUR BRAND
+      //region
+case 'our-brand/get':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+}
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5('our-brand/get'), 2592000)) {
+
+  $output = wire('pages')->get('/our-brand')->toArray();
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);
+
+output_json(true, '', $output, null, true, 600);  
+
+break;
+        //endregion
+
+      //GUIDELINES
+      //region
+case 'guidelines/get':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+}
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5('guidelines/get'), 2592000)) {
+
+  $output = wire('pages')->get('/guidelines')->toArray();
+
+  $output = serialize($output);
+
+  $cache->save($output);
+} 
+
+$output = unserialize($output);
+
+output_json(true, '', $output, null, true, 600);   
+
+break;
+      //endregion
+
+      //LOGS
+      //region
+case 'logs/get':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+if(!wire('user')->hasRole('admin')) {
+  output_json(false, 0, 'You don\'t have permissions to execute this operation!');
+  exit;
+} 
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5('logs/get'), 2592000)) {
+
+  $output = wire('pages')->find( "template=log,parent=/logs/,sort=-created,include=hidden" )->toArray();
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);
+
+output_json(true, '', $output, null, true, 600);  
+
+break;
+
+case 'logs/get/bookings':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+} 
+if(!wire('user')->hasRole('admin')) {
+  output_json(false, 0, 'You don\'t have permissions to execute this operation!');
+  exit;
+} 
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5('logs/get/bookings'), 2592000)) {
+
+  $output = wire('pages')->find( "template=log,parent=/logs/,sort=-created,include=hidden" )->toArray();
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);
+
+output_json(true, '', $output, null, true, 600);  
+
+break;
+
+case 'logs/get/assets/activity':
+
+if(!wire('user')->isLoggedin()) {
+  output_json(false, 0, 'You have to be logged in first');
+  exit;
+}
+
+if(!wire('user')->hasRole('admin')) {
+  output_json(false, 0, 'You don\'t have enough permissions to run this operation!');
+  exit;
+} 
+
+$page = empty(wire('input')->page) ? 1 : (int)wire('input')->page;
+
+$start = ($page - 1) * $this->items_per_page;
+$start = $start < $this->items_per_page ? 0 : $start;
+
+$selector = "template=log,parent=/logs/,type^=assets/,sort=-created,start=$start,limit=".$this->items_per_page;
+
+$cache = wire('modules')->get("MarkupCache");
+if(!$output = $cache->get(md5('logs/get/assets/activity/' . $selector), 2592000)) {
+
+  $total = wire('pages')->count($selector);
+  $assets = wire('pages')->find($selector);
+  $output = array();
+
+  foreach ($assets as $asset) {
+    $related_content = wire('pages')->get('id='.$asset->value);
+    if( $related_content->id ) {
+
+      $asset_array = $asset->toArray();
+      $asset_array['data']['value'] = $related_content->toArray();
+
+      $asset_array['data']['type'] .= $asset->type[strlen($asset->type)-1] === 'e' ? 'd': 'ed';
+
+      if(!empty($asset_array['data']['value']['data']['owner'][0])) {
+        $asset_array['data']['value']['data']['owner'] = wire('pages')->get('template=user,id='.$asset_array['data']['value']['data']['owner'][0])->toArray();  
+        unset($asset_array['data']['value']['data']['owner']['data']['pass']); 
+        unset($asset_array['data']['value']['data']['owner']['data']['roles']); 
+      }
+
+      $output[] = $asset_array;
+
+    }
+  }
+
+  $output = array('total'=>$total, 'items_per_page'=>$this->items_per_page, 'pages'=>ceil($total / $this->items_per_page), 'page'=>$page, 'records'=>$output);
+
+  $output = serialize($output);
+
+  $cache->save($output);
+}
+
+$output = unserialize($output);
+
+output_json(true, '', $output, null, true, 600);
+
+break;
+      //endregion
+
+      //BRAND HUB
+      //region
+case 'bookings/upload':
+
+if(!wire('user')->hasPermission('brandhub-book')) {
+  output_json(false, 0, 'You don\'t have permissions to book brand hubs!');
+  exit;
+}
+
+$upload_path = wire('config')->paths->cache;
+
+        $uploaded_file = new WireUpload( 'file' ); // References the name of the field in the HTML form that uploads the photo
+        $uploaded_file->setMaxFiles( 5 );
+        $uploaded_file->setOverwrite( true );
+        $uploaded_file->setDestinationPath( $upload_path );
+        $uploaded_file->setValidExtensions( array( 'jpg', 'jpeg', 'gif','tiff','tif','png','psd','psb','zip','rar','tar','gzip','txt','doc','docx','xls','xlsx','ppt','pptx','pdf','rtf','mp3','ogg','wav','mov','mp4','f4v','flv','c4d','swf','eps','avi','ai','mpg', 'tga', 'ttf' ) );
+
+        $files = $uploaded_file->execute();
+        
+        if ( !count( $files ) ) { 
+          output_json(false, 1, 'You need to select at least one file!');
+          exit;
+        }
+        
+        $page = wire('pages')->get( "id=".wire('input')->post->id );
+        if(!$page->id) { 
+          output_json(false, 1, 'The book event can\'t be found!');       
+        }
+
+        $page->of(false);
+        
+        foreach ( $files as $filename ) {
+          $pathname = $upload_path . $filename;
+          $page->files->add( $pathname );
+          unlink( $pathname );
+        }
+
+        $page->save();    
+
+        output_json(true, '', 'Upload to booking successful');    
+
+        break;
+
+        case 'bookings/slots/get/all-available':
+
+        if(!wire('user')->hasPermission('brandhub-book')) {
+          output_json(false, 0, 'You don\'t have permissions to book brand hubs!');
+          exit;
+        }
+
+        $start = intval(wire('input')->date);
+
+        $slots_booked = array(
+          0 => false,
+          15 => false,
+          30 => false,
+          45 => false
+          );
+ 
+        $starttime = strtotime( date('Y-m-d', $start) . " 14:00:00");
+        $endtime = strtotime( date('Y-m-d', $start) . " 15:00:00");
+
+        $slots = wire('pages')->find( "template=booking, parent=/brand-hub/, brandhub_event_starttime>=$starttime, brandhub_event_endtime<=$endtime, sort=brandhub_event_starttime" );
+
+        foreach ($slots as $slot) {
+          $slots_booked[intval(date('i', $slot->brandhub_event_starttime))] = true;
+          $slot_length = (intval(date('i', $slot->brandhub_event_endtime)) - intval(date('i', $slot->brandhub_event_starttime))) / 15;
+          $slot_length = $slot_length === 0 ? 4 : $slot_length;
+
+          for($j = 1; $j < $slot_length; $j++) {
+            $slots_booked[intval(date('i', $slot->brandhub_event_starttime)) + (15 * $j)] = true;
+          }
+        }
+
+        $free_slots = array();
+
+        foreach ($slots_booked as $slot => $value) {
+          $slot = $slot === 0 ? '00' : $slot;
+
+          $valid = time() < strtotime(date('d-m-Y', $start) . " 14:" . $slot.':00');
+
+          if(!$value && $valid) {
+            $free_slots[$slot] = true;
+          }
+        }
+
+        if(!empty($free_slots)) {
+          output_json(true, '', array('date' => date('Y-m-d', $start), 'slots' => $free_slots), null, true);  
+          break;  
+        }
+
+        break;
+
+        case 'bookings/get/monthly':
+
+        if(!wire('user')->hasRole('admin')) {
+          output_json(false, 0, 'You don\'t have permissions to book brand hubs!', null);
+          exit;
+        }
+
+        $now = time();
+        $monthstart = strtotime( date('01-m-Y 00:00:00', (int)wire('input')->date));
+        $monthend = strtotime( date('t-m-Y 23:59:59', (int)wire('input')->date));
+
+        $selector = "template=booking, parent=/brand-hub/, brandhub_event_starttime>=$now, !brandhub_campaign=cancelled, brandhub_event_starttime>=$monthstart, brandhub_event_endtime<=$monthend, sort=brandhub_event_starttime";
+
+        $cache = wire('modules')->get("MarkupCache");
+        if(!$output = $cache->get(md5('bookings/get/monthly/' . $selector), 2592000)) {
+
+          $bookings = wire('pages')->find( $selector ); 
+
+          $data = array();
+          
+          foreach ($bookings as $booking) {
+            $day = date('d', $booking->brandhub_event_starttime);
+            $slot = date('i', $booking->brandhub_event_starttime);
+            if(!isset($data[$day])) { $data[$day] = array(); }
+            $data[$day][$slot] = array(
+              'id' => $booking->id,
+              'day' => date('D', $booking->brandhub_event_starttime),
+              'starttime' => $booking->brandhub_event_starttime,
+              'endtime' => $booking->brandhub_event_endtime,
+              'first_name' => $booking->first_name,
+              'last_name' => $booking->last_name,
+              'title' => $booking->brandhub_campaign,
+              'date_in_market' => date('d/m/Y', $booking->brandhub_date_in_market),
+              'deadline' => date('d/m/Y', $booking->brandhub_deadline),
+              'phone' => $booking->phone
+              );
+          }
+
+          $output = array('total_records' => count($bookings), 'total_days' => count($data), 'records' => $data);
+
+          $output = serialize($output);
+
+          $cache->save($output);
+        }
+
+        $output = unserialize($output);
+
+        output_json(true, '', $output, null, true, 30);
+
+        break;
+
+        case 'bookings/get/monthly/all':
+
+        if(!wire('user')->hasRole('admin')) {
+          output_json(false, 0, 'You don\'t have permissions to book brand hubs!');
+          exit;
+        }
+
+        $now = time();
+        $monthstart = strtotime( date('01-m-Y 00:00:00', (int)wire('input')->date));
+        $monthend = strtotime( date('t-m-Y 23:59:59', (int)wire('input')->date));
+
+        $cache = wire('modules')->get("MarkupCache");
+        if(!$output = $cache->get(md5('bookings/get/monthly/all/' . $monthstart . $monthend), 2592000)) {
+
+          $bookings = wire('pages')->find( "template=booking, parent=/brand-hub/, brandhub_event_starttime>=$now, brandhub_event_starttime>=$monthstart, brandhub_event_endtime<=$monthend, sort=brandhub_event_starttime" ); 
+
+          $bookings_no_cancel = wire('pages')->find( "template=booking, parent=/brand-hub/, brandhub_event_starttime>=$now, brandhub_event_starttime>=$monthstart, brandhub_event_endtime<=$monthend, sort=brandhub_event_starttime, !brandhub_campaign=cancelled" ); 
+
+          $data = array();
+          
+          foreach ($bookings as $booking) {
+            $day = date('j', $booking->brandhub_event_starttime);
+            while($booking->brandhub_event_starttime < $booking->brandhub_event_endtime) {
+              $slot = date('i', $booking->brandhub_event_starttime);
+              if(!isset($data[$day])) { $data[$day] = array(); }
+              $data[$day][$slot] = array(
+                'id' => $booking->id,
+                'day' => date('j', $booking->brandhub_event_starttime),
+                'starttime' => $booking->brandhub_event_starttime,
+                'endtime' => strtotime('+15 minutes', $booking->brandhub_event_starttime),
+                'first_name' => $booking->first_name,
+                'last_name' => $booking->last_name,
+                'title' => $booking->brandhub_campaign,
+                'date_in_market' => date('d/m/Y', $booking->brandhub_date_in_market),
+                'deadline' => date('d/m/Y', $booking->brandhub_deadline),
+                'phone' => $booking->phone,
+                'description' => $booking->summary
+                );
+              $data[$day][$slot]['files'] = array();
+              foreach ($booking->files as $file) {
+                $data[$day][$slot]['files'][] = array('name' => $file->name, 'url' => $file->url);
+              }
+              $booking->brandhub_event_starttime = strtotime('+15 minutes', $booking->brandhub_event_starttime);
+            }
+          }
+
+          $start_day = date('n', $now) === date('n', $monthstart) ? (int)date('j', $now) : 1;
+          for($i = $start_day; $i <= date('t', (int)wire('input')->date); $i++) {
+             //skip if weekend
+            if(date('N', strtotime("+" . ($i - 1) . "day", $monthstart)) >= 6) {
+              continue;
+            }
+
+            if(empty($data[$i])) {
+              $data[$i] = array('empty' => true);
+            }
+
+            $data[$i]['dayName'] = date('D', strtotime("+" . ($i - 1) . "day", $monthstart));
+            $data[$i]['date'] = date('j-m-Y ',  strtotime("+" . ($i - 1) . "day", $monthstart));
+            $data[$i]['dayNo'] = $i;       
+          }
+          
+          ksort($data);
+
+          $output = array('total_records' => count($bookings_no_cancel), 'total_days' => count($data), 'records' => $data);
+
+          $output = serialize($output);
+
+          $cache->save($output);
+        }
+
+        $output = unserialize($output);
+
+        output_json(true, '', $output, null, true, 30);
+
+        break;
+
+        case 'bookings/delete':
+
+        if(!wire('user')->hasRole('admin')) {
+          output_json(false, 0, 'You don\'t have permissions to book brand hubs!');
+          exit;
+        }
+
+        wire('pages')->delete( wire('pages')->get( "id=" . wire('input')->post->id ), true);
+
+        $this->log($this->operation, wire('input')->post->id); 
+
+        output_json(true, '', 'Booking successfully deleted');
+
+        break;
+
+        case (preg_match('/bookings\/calendar\/.*/', $this->operation) || empty($this->operation)  ? true : false):
+        $parts = explode('/', $this->operation);
+        $booking_id = end($parts);
+        
+        $ics = wire('modules')->get("MarkupiCalendar"); 
+        $today = time();
+        $items = wire('pages')->find("template=booking, parent=/brand-hub, id=$booking_id");
+        $ics->render($items); 
+
+        //$this->mail(array('type' => 'brandhub.notify.admins',));
+
+        exit;
+
+        break;
+
+        case 'bookings/sessions/cancel':
+
+        if(!wire('user')->hasRole('admin')) {
+          output_json(false, 0, 'You don\'t have permissions to cancel sessions!');
+          exit;
+        }
+        
+        //cancel current bookings
+        $starttime = strtotime( date("Y-m-d 14:00:00", wire('input')->post->date));
+        $endtime = strtotime( date("Y-m-d 15:00:00", wire('input')->post->date));
+        
+        $slots = wire('pages')->find( "template=booking, parent=/brand-hub/, brandhub_event_starttime>=$starttime, brandhub_event_endtime<=$endtime, sort=brandhub_event_starttime" );
+
+        $deleted = false;
+        foreach ($slots as $slot) {
+          $this->mail(array('type' => 'brandhub.notify.user.cancelled', 'page_id' => $slot->id));
+          wire('pages')->delete($slot, true);
+        }
+
+        //cancel slots
+        foreach (array('00', '15', '30', '45') as $value) {
+          $starttime = strtotime( date("Y-m-d 14:$value:00", wire('input')->post->date));
+          $endtime = strtotime( '+15 minutes', $starttime);
+
+          $pagetitle = wire('sanitizer')->pageName(date('Y-m-d H:i', $starttime));
+
+          wire(pages)->add('booking', '/brand-hub/', array(
+            'title' => $pagetitle, 
+            'full_name' => 'cancelled',
+            'brandhub_campaign' => 'cancelled',
+            'brandhub_date_in_market' => 'cancelled',
+            'brandhub_deadline' => 'cancelled',
+            'phone' => 'cancelled',
+            'summary' => 'cancelled',
+            'brandhub_event_starttime' => $starttime,
+            'brandhub_event_endtime' => $endtime
+            ));
+
+        }
+
+        $this->log($this->operation, wire('input')->post->date);    
+
+        output_json(true, '', 'Session successfully cancelled');
+
+        break;
+
+        case 'bookings/add':
+
+        if(!wire('user')->hasPermission('brandhub-book')) {
+          output_json(false, 0, 'You don\'t have permissions to book brand hubs!');
+          exit;
+        }
+
+        $page = new Page(); 
+        $page->template = wire('templates')->get( "booking" ); 
+        $page->parent = '/brand-hub'; 
+        $page->title = wire('sanitizer')->pageName(date('Y-m-d H:i', intval(wire('input')->post->starttime)));
+        $page->first_name = wire('sanitizer')->text(wire('input')->post->first_name);
+        $page->last_name = wire('sanitizer')->text(wire('input')->post->last_name);
+        $page->brandhub_campaign = wire('sanitizer')->text(wire('input')->post->campaign);
+        $page->brandhub_date_in_market = intval(wire('input')->post->date_in_market);
+        $page->brandhub_deadline = intval(wire('input')->post->deadline);
+        $page->phone = wire('sanitizer')->text(wire('input')->post->phone);
+        $page->summary = wire('sanitizer')->text(wire('input')->post->description);
+        $page->brandhub_event_starttime = intval(wire('input')->post->starttime);
+        $page->brandhub_event_endtime = intval(wire('input')->post->endtime);
+
+        $page->owner = wire('user')->id;
+        
+        $page->save();  
+
+        $this->log($this->operation, $page->id);    
+
+        output_json(true, '', array('id' => $page->id));    
+
+        break;
+
+        case 'bookings/get':
+
+        if(!wire('user')->hasRole('admin')) {
+          output_json(false, 0, 'You don\'t have permissions to manage brand hubs!');
+          exit;
+        }
+
+        $cache = wire('modules')->get("MarkupCache");
+        if(!$output = $cache->get(md5('bookings/get/' . wire('input')->id), 2592000)) {
+
+          $booking = wire('pages')->get( "id=".wire('input')->id.", template=booking" ); 
+
+          $data = array(
+            'id' => $booking->id,
+            'day' => date('D', $booking->brandhub_event_starttime),
+            'starttime' => intval($booking->brandhub_event_starttime) * 1000,
+            'endtime' => intval($booking->brandhub_event_endtime) * 1000,
+            'first_name' => $booking->first_name,
+            'last_name' => $booking->last_name,
+            'title' => $booking->brandhub_campaign,
+            'date_in_market' => $booking->brandhub_date_in_market,
+            'deadline' => $booking->brandhub_deadline,
+            'phone' => $booking->phone,
+            'description' => $booking->summary,
+            'files' => array()
+            );
+
+          $imgExtensions = array(".jpg", ".gif", ".jpeg", ".png", ".bmp");
+
+          foreach ($booking->files as $value) {
+
+            $ext = (false === $pos = strrpos($value, '.')) ? '' : substr($value, $pos);
+
+            if(in_array($ext, $imgExtensions)) {
+              $image = new Pageimage(new PageImages($booking), $value);
+              $data['files'][] = array('ext' => $ext, 'full' => $value->url, 'thumb' => $image->width(200)->url);
+            } else {
+              $data['files'][] = array('ext' => $ext, 'full' => $value->url);        
+            }
+          }
+
+          $output = serialize($data);
+
+          $cache->save($output);
+        }
+
+        $output = unserialize($output);
+
+        output_json(true, '', $output, null, true, 30);
+
+        break;
+      //endregion
+
+      //NOTIFY
+      //region
+        case (preg_match('/notify\/booking\/.*/', $this->operation) || empty($this->operation)  ? true : false):
+        
+        if(!wire('user')->isLoggedin()) {
+          output_json(false, 0, 'You don\'t have permissions to run this operation!');
+          exit;
+        }
+
+        $parts = explode('/', $this->operation);
+        $id = (int)end($parts);
+
+        $this->mail(array('type' => 'brandhub.notify.admins', 'id' => $id));
+
+        exit;
+
+        break;
+        case (preg_match('/notify\/assets\/new\/.*/', $this->operation) || empty($this->operation)  ? true : false):
+        
+        if(!wire('user')->isLoggedin()) {
+          output_json(false, 0, 'You don\'t have permissions to run this operation!');
+          exit;
+        }
+
+        $parts = explode('/', $this->operation);
+        $id = (int)end($parts);
+
+        $this->mail(array('type' => 'assets.notify.admins', 'id' => $id));
+
+        exit;
+
+        break;
+      //endregion
+
+      //DOWNLOAD
+      //region
+        case (preg_match('/download\/single\/.*/', $this->operation) || empty($this->operation)  ? true : false):
+
+        http_response_code(200);
+
+        $parts = explode('/', $this->operation);
+        $id = (int)end($parts);
+
+        $asset = wire('pages')->get("template=asset,parent=/assets,include=all,id=$id");
+
+        if(!$asset->id) {
+          output_json(false, 0, 'Asset with id $id could not be found');
+        }
+
+        $file = $asset->files->eq(0)->filename;
+        if(!file_exists($file)) {
+         echo 'Error. The file doesn\'t exist!';
+         exit;
+       }
+       $ext = pathinfo($file, PATHINFO_EXTENSION);        
+
+       header('Content-Type: application/octet-stream');
+       header("Cache-Control: Cache-Control: public, max-age=604800, s-maxage=604800");
+       header("Expires: " . gmdate('D, d M Y H:i:s \G\M\T', time() + 604800));
+       header("Pragma: cache");
+       header('Content-Disposition: attachment; filename="'.$asset->title.'.'.$ext.'"');
+       header('Content-Length: ' . filesize($file));
+
+       set_time_limit(0);
+       $f = @fopen($file,"rb");
+       while(!feof($f))
+       {
+        print(@fread($f, 1024*8));
+        ob_flush();
+        flush();
+      }
+
+      exit;
+
+      break;
+
+      //endregion
+
+      //SETTINGS
+      //region
+
+      case 'settings/get':
+
+      if(!wire('user')->isLoggedin()) {
+        output_json(false, 0, 'You don\'t have permissions to run this operation!');
+        exit;
+      }
+
+      $cache = wire('modules')->get("MarkupCache");
+      if(!$output = $cache->get(md5('settings/get'), 2592000)) {
+
+        $settings_general = wire('pages')->get('template=settings_general');
+        $settings_content = wire('pages')->get('template=settings_content');
+
+        $output = array();
+        $output['general'] = array();
+        $output['content'] = array();
+        $output['general']['naming_guide'] = $settings_general->settings_naming_convention;
+        $output['general']['news_notice'] = $settings_general->settings_news_notice;
+        $output['general']['upload_guide'] = $settings_general->settings_upload_guide->url;
+        $output['general']['maintenance_mode'] = 0;
+        $output['content']['notice_copy_default'] = $settings_content->settings_content_notice_copy_default;
+
+        $output = serialize($output);
+
+        $cache->save($output);
+      }
+
+      $output = unserialize($output);
+
+      if(file_exists(wire('config')->paths->cache.'in_maintenance')) {
+        $output['general']['maintenance_mode'] = 1;
+      }
+
+      output_json(true, '', $output, null, true, 30);  
+
+      break;
+
+      case 'settings/cronjob':
+
+      if(!$this->isLocalhost()) {
+        output_json(false, 0, 'You don\'t have permissions to run this operation!');
+        exit;
+      }
+
+        //don't run on dev / stage
+      if(wire('config')->debug) {
+        exit;
+      }
+
+      Api::getInstance()->mail(array('type' => 'assets.notify.admins.assets'));
+
+        //clear old logs
+      $pages = wire('pages')->find('template=log, created<'.strtotime('-3 months'));
+      foreach ($pages as $page) {
+        wire('pages')->delete($page, true);
+      }
+
+        //lock old users
+      $expiry_interval = wire('pages')->get('template=settings_general')->expiry_interval;
+      $pages = wire('pages')->find('template=user, roles=external, date_created<'.strtotime('-'.$expiry_interval.' days'));
+      foreach ($pages as $page) {
+        $page->of(false);
+        $page->user_locked = true;
+        $page->save();
+      }
+
+        //send mail if disk space is running low (<10GB)
+        // if(disk_free_space("/") < 11000000000) {
+        //   Api::getInstance()->mail(array('type' => 'server.lowspace'));
+        // }
+
+      break;
+
+      case 'settings/maintenance/j564jn634n3k456rj1-nacn73n1ttc11c7m1c4t7c4y1pqwoc4859623vodf89g7gm1c4c107-on':
+
+      if(!$this->isLocalhost()) {
+        header( 'Location: /' ) ;
+      }
+
+      file_put_contents(wire('config')->paths->cache.'in_maintenance', 1);
+
+      echo 'Maintenance mode enabled';
+
+      break;
+
+      case 'settings/maintenance/j564jn634n3k456rj1-nacn73n1ttc11c7m1c4t7c4y1pqwoc4859623vodf89g7gm1c4c107-off':
+
+      if(!$this->isLocalhost()) {
+        header( 'Location: /' ) ;
+      }
+
+      if(file_exists(wire('config')->paths->cache.'in_maintenance')) {
+        unlink(wire('config')->paths->cache.'in_maintenance');
+        echo 'Maintenance mode disabled';
+        exit;
+      }
+      echo 'Maintenance mode not enabled';
+
+      break;
+
+      //endregion
+
+      //INTERNATIONAL
+      //region
+
+      case 'international/campaigns/get':
+      if(!wire('user')->isLoggedin() || !wire('user')->hasPermission('asset-upload')) {
+        output_json(false, 0, 'eeeYou don\'t have permissions to run this operation!');
+        exit;
+      }
+
+      $cache = wire('modules')->get("MarkupCache");
+      if(!$output = $cache->get(md5('international/campaigns/get'), 300)) {
+        $ch = curl_init();
+        if($ch) {
+          curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+          curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+          curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization-Token: ' . Api::$config['international_site']['auth']
+            ));
+
+          if(!curl_setopt($ch, CURLOPT_URL, Api::$config['international_site']['campaigns_get_url'])) {
+            output_json(false, '1', 'Curl error', null, true, 5);                
+          }
+          $output = curl_exec($ch);
+          curl_close($ch);
+
+          $output = json_decode($output, true);
+
+        } else {
+          output_json(false, '2', 'Curl error', null, true, 5);  
+        }
+
+        $output = serialize($output);
+
+        $cache->save($output);
+      }
+
+      $output = unserialize($output);
+
+      output_json(true, '', $output, null, true, 300);  
+
+      break;
+
+      //endregion
+
+      //EXEC
+      //region
+      case 'exec':
+
+      output_json(true, 0, 'The operation doesn\'t exist!'); 
+      exit;        
+
+      break;
+      //endregion
+
+      default:
+      output_json(true, 0, 'The operation doesn\'t exist!');      
+      break;
+
+    } //end switch
+
+  } //end init
+
+
+  //HELPERS
+  //region
+
+  public function byte_convert($size) {
+    if (empty($size)) return $size . '0 Bytes';
+    # size smaller then 1kb
+    if ($size < 1024) return $size . ' Bytes';
+    # size smaller then 1mb
+    if ($size < 1048576) return sprintf("%4.0f KB", $size/1024);
+    # size smaller then 1gb
+    if ($size < 1073741824) return sprintf("%4.0f MB", $size/1048576);
+    # size smaller then 1tb
+    if ($size < 1099511627776) return sprintf("%4.0f GB", $size/1073741824);
+    # size larger then 1tb
+    else return sprintf("%4.2f TB", $size/1073741824);
+  }
+
+  public function checkRequestStatus() {
+    $valid = true;
+    
+    if(file_exists(wire('config')->paths->cache.'in_maintenance') && $this->operation !== 'settings/maintenance/j564jn634n3k456rj1-nacn73n1ttc11c7m1c4t7c4y1pqwoc4859623vodf89g7gm1c4c107-off') {
+      $valid = false;
+    }
+    if(!$valid) {
+      output_json(false, '', ['in_maintenance' => true], ['The website is currently in maintenance']);  
+    }
+  }
+
+  public function getOperation() {
+    return  (!empty(wire('input')->urlSegment1) ? wire('input')->urlSegment1 : '' ) 
+    . (!empty(wire('input')->urlSegment2) ? '/' . wire('input')->urlSegment2 : '' ) 
+    . (!empty(wire('input')->urlSegment3) ? '/' . wire('input')->urlSegment3 : '' )
+    . (!empty(wire('input')->urlSegment4) ? '/' . wire('input')->urlSegment4 : '' )
+    . (!empty(wire('input')->urlSegment5) ? '/' . wire('input')->urlSegment5 : '' )
+    . (!empty(wire('input')->urlSegment6) ? '/' . wire('input')->urlSegment6 : '' );
+  }
+
+  public function isInternal() {
+    $valid = false;
+    if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR']) {
+      $clientIpAddress = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+    } else {
+      $clientIpAddress = array($_SERVER['REMOTE_ADDR']);
+    }
+    foreach ($clientIpAddress as $value) {
+      if(preg_match("/^90\.216\.134\.(1(9[2-9])|2([0-1][0-9]|2[0-2]))$/",$value) ||
+       preg_match("/^90\.216\.150\.(1(9[3-9])|2([0-1][0-9]|2[0-2]))$/",$value) ||
+       preg_match("/^10\.0\..*$/",$value) ||
+       in_array($value, array('127.0.0.1'))) {
+        $valid = true;
+    }
+  }
+  return $valid;
+}
+
+  //$pages_array contains ids of pages that will need queries from the db first
+  //$text_array is array of text fields
+public function getSearchContent($pages_array,$text_array) {
+  $output = [];
+  foreach ($pages_array as $field) {
+    $values = explode('|', $field);
+    foreach ($values as $value) {
+      $page = wire('pages')->get('id='.$value);
+      if($page->id) {
+        $output[] = $page->title;
+      }
+    }
+  }
+  foreach ($text_array as $value) {
+    $output[] = $value;
+  }
+  return implode(' ', $output);
+}
+
+public function isLocalhost() {
+  $whitelist = array(
+    '127.0.0.1',
+    '::1'
+    );
+
+  return in_array($_SERVER['REMOTE_ADDR'], $whitelist);
+}
+
+public function prepare_asset($asset) {
+  $asset_array = $asset->toArray();
+
+  $asset_array['data']['thumb_scaled'] = !empty($asset->thumb_url) || $asset_array['data']['thumb']['scaled'];
+  $asset_array['data']['thumb'] = empty($asset->thumb_url) ? $asset_array['data']['thumb']['large'] : $asset_array['data']['thumb_url'];
+
+
+  //if( !empty($asset_array['data']['owner']) ) { unset($asset_array['data']['owner']['data']['pass']); unset($asset_array['data']['owner']['data']['roles']); }
+
+  //$asset_array['data']['files'] = array();
+  //foreach ($asset->files as $file) {
+  //  $file_url = $file->url;
+   // if(!empty(Api::$config['assets_domain'])) {
+  //    $file_url = Api::$config['assets_domain'] . $file_url;
+  //  }
+  //  $asset_array['data']['files'][] = $file_url;
+ // }
+
+  return $asset_array;
+}
+
+public function log($type, $value) {
+
+  $now = time();
+
+  $p = new Page(); 
+  $p->template = wire('templates')->get( "log" ); 
+  $p->parent = wire('pages')->get( "/logs/" ); 
+  $p->title = $type . ' | ' . date('Y-m-d | H:i:s', $now);
+  $p->type = $type;
+  $p->value = $value;
+  $p->date_created = $now;
+
+  $p->save();      
+
+}
+
+  //endregion
+
+  //MAIL
+  //region
+public function mail($args) {
+
+  if(!$args['type']) {
+    return false;
+  }
+
+    //Brandhub notify admins
+  // if($args['type'] === 'feedback.notify.brandteam') {     
+
+  //   $to = 'Brandteam@bskyb.com,David.Pearce@bskyb.com,Gary.Jobe@bskyb.com,jonathan.popoola@bskyb.com';
+
+  //   $subject = 'New Brand Hub feedback  '.date('l d F \a\t g:i A', time());
+
+  //   $message = '<html><body>';
+  //   $message .= '<table rules="all" style="border: 1px solid black;" cellpadding="10">';
+  //   $message .= "<tr style='background: #eee; font-size: 24px;'><td colspan='2'> NEW BRAND HUB FEEDBACK </td></tr>";
+  //   $message .= "<tr><td> Send by: $args[name] ($args[email])</td></tr>";
+  //   $message .= "<tr><td> Feedback: $args[comment]</td></tr>";
+  //   $message .= "</table>";
+  //   $message .= "</body></html>";
+  // }
+
+    //Brandhub notify admins
+  // if($args['type'] === 'brandhub.notify.admins') {
+
+  //   $settings = wire('pages')->get("template=settings_general");      
+
+  //   $to = array();
+  //   foreach ($settings->settings_brandhub_meetings_receivers as $email) {
+  //     $to[] = $email->email;
+  //   }
+
+  //   if(count($to) === 0) {
+  //     exit;
+  //   }
+
+  //   $to = implode(',', $to);
+
+  //   $booking = wire('pages')->get("template=booking, parent=/brand-hub, id=".$args['id']);
+
+  //   $subject = 'New Brand Hub meeting on '.date('l d F \a\t g:i A', $booking->brandhub_event_starttime);
+
+  //   $message = '<html><body>';
+  //   $message .= '<table rules="all" style="border: 1px solid black;" cellpadding="10">';
+  //   $message .= "<tr style='background: #eee; font-size: 24px;'><td colspan='2'> NEW BRAND HUB MEETING </td></tr>";
+  //   $message .= "<tr><td> You are invited to a Brand Hub metting on ".date('l d F \a\t g:i A', $booking->brandhub_event_starttime)."</td></tr>";
+  //   $message .= "<tr><td> Add to your calendar by clicking <a href='https://www.believeinbetter.com/api/bookings/calendar/".$args['id']."'> this link</a> and double clicking the downloaded calendar file</td></tr>";
+  //   $message .= "</table>";
+  //   $message .= "</body></html>";
+  // }
+
+    //Brandhub cancelled
+  if($args['type'] === 'brandhub.notify.user.cancelled') {
+
+    $booking = wire('pages')->get("template=booking, id=".$args['page_id']);
+
+    $to[] = $booking->owner->email;
+
+    $to = implode(',', $to);
+
+    $subject = 'Cancelled Brand Hub meeting on '.date('l d F \a\t g:i A', $booking->brandhub_event_starttime).' has been cancelled';
+
+    $message = '<html><body>';
+    $message .= '<table rules="all" style="border: 1px solid black;" cellpadding="10">';
+    $message .= "<tr style='background: #eee; font-size: 24px;'><td colspan='2'> CANCELLED BRAND HUB MEETING </td></tr>";
+    $message .= "<tr><td> The Brand Hub meeting on ".date('l d F \a\t g:i A', $booking->brandhub_event_starttime)." has been cancelled. Please feel free to get in touch with the Brand Hub team should you require more information.</td></tr>";
+    $message .= "<tr><td> Don't forget to also remove the appointment from your calendar.</td></tr>";
+    $message .= "</table>";
+    $message .= "</body></html>";
+  }
+
+    //Assets awaiting approval
+  if($args['type'] === 'assets.notify.admins.assets') {
+
+    $settings = wire('pages')->get("template=settings_general");      
+
+    $to = array();
+    foreach ($settings->settings_assets_notifications_receivers as $email) {
+      $to[] = $email->email;
+    }
+
+    if(count($to) === 0) {
+      exit;
+    }
+
+    $to = implode(',', $to);
+
+    $assets = wire('pages')->find("template=asset, include=all, parent=/assets/, status=unpublished, sort=-created");
+
+    if(count($assets) === 0) {
+      exit;
+    }
+
+    $subject = 'New assets are awaiting for your approval';
+
+    $message = '<html><body>';
+    $message .= '<table rules="all" style="border: 1px solid black;" cellpadding="10">';
+    $message .= "<tr style='background: #eee; font-size: 24px;'><td colspan='3'> The following assets are waiting for approval</td></tr>";
+
+    $message .= "<tr><td> Asset title</td>";
+    $message .= "<td> Date uploaded</td>";
+    $message .= "<td> Author</td></tr>";
+
+    foreach ($assets as $asset) {
+      $message .= "<tr><td>".$asset->title."</td>";
+      $message .= "<td>".date('l d F \a\t g:i A', $asset->created)."</td>";
+      $message .= "<td>".$asset->owner->first_name.' '.$asset->owner->last_name."</td></tr>";
+    }
+    $message .= "<tr><td td colspan='3'> Click <a href='https://www.believeinbetter.com/admin/assets/awaiting'> here </a> to go to the approval page </td></tr>";
+    $message .= "</table>";
+    $message .= "</body></html>";
+  }
+
+    //Reject
+  if($args['type'] === 'asset.reject') {
+
+    $subject = 'Asset rejected';
+
+    $to = $args['email'];
+    $title = $args['title'];
+    $comment = $args['comment'];
+
+    $message = '<html><body>';
+    $message .= '<table rules="all" style="border: 1px solid black;" cellpadding="10">';
+    $message .= "<tr style='background: #eee; font-size: 24px;'><td colspan='2'> Asset rejected </td></tr>";
+    $message .= "<tr><td>Your asset was not approved by the Brand Team</td></tr>";
+    $message .= "<tr><td>Asset title: $title</td></tr>";
+    $message .= "<tr><td>Reason for rejection:</td></tr>";
+    $message .= "<tr><td>$comment</td></tr>";
+    $message .= "</table>";
+    $message .= "</body></html>";
+  }
+
+    //Approve
+  if($args['type'] === 'asset.approve') {
+
+    $to = $args['email'];
+    $title = $args['title'];
+
+    $subject = "Asset approved: $title";
+
+    $message = '<html><body>';
+    $message .= '<table rules="all" style="border: 1px solid black;" cellpadding="10">';
+    $message .= "<tr style='background: #eee; font-size: 24px;'><td colspan='2'> Asset approved </td></tr>";
+    $message .= "<tr><td>Your asset was approved by the Brand Team</td></tr>";
+    $message .= "<tr><td>Asset title: $title</td></tr>";
+    $message .= "</table>";
+    $message .= "</body></html>";
+  }
+
+  $headers = "From: no-reply@believeinbetter.com\r\n";
+  $headers .= "Reply-To: no-reply@believeinbetter.com\r\n";
+  $headers .= "MIME-Version: 1.0\r\n";
+  $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+
+  return mail($to, $subject, $message, $headers);
+
+} 
+  //endregion
+
+} //end API class
+
+
+//SKY LOG CLASS
+//override default PW log class so it doesn't remove new lines from output
+//region
+final class SkyLog {
+
+  private static $log;
+
+  private static $instances = array();
+  
+  private function __clone(){}
+  private function __wakeup(){}
+  private function __construct(){}
+  
+  public static function getInstance()
+  {
+    $cls = get_called_class(); // late-static-bound class name
+    if (!isset(self::$instances[$cls])) {
+      self::$log = new SkyFileLog(wire('config')->paths->logs . 'debug.txt');
+      self::$instances[$cls] = new static;
+    }
+    return self::$instances[$cls];
+  }
+
+  public function output($output) {
+    //self::$log->prune(10000);
+
+    if( is_array( $output ) || is_object( $output ) ){
+      self::$log->save(print_r( $output, true ));
+    } else {
+      self::$log->save(' | ' . $output);
+    }
+  }
+
+}
+
+class SkyFileLog extends FileLog {
+
+  public function save($str) {
+
+    if(!$this->logFilename) return false; 
+
+    $hash = md5($str); 
+
+    // if we've already logged this during this session, then don't do it again
+    if(in_array($hash, $this->itemsLogged)) return true; 
+
+    $ts = date("Y-m-d H:i:s"); 
+
+    //$str = $this->cleanStr($str); 
+
+    if($fp = fopen($this->logFilename, "a")) {
+
+      $trys = 0; 
+      $stop = false;
+
+      while(!$stop) {
+        if(flock($fp, LOCK_EX)) {
+          fwrite($fp, "$ts{$this->delimeter}$str\n"); 
+          flock($fp, LOCK_UN); 
+          $this->itemsLogged[] = $hash; 
+          $stop = true; 
+        } else {
+          usleep(2000);
+          if($trys++ > 20) $stop = true; 
+        }
+      }
+
+      fclose($fp); 
+      return true; 
+    } else {
+      return false;
+    }
+
+  }
+}
+//endregion
+
+class Sky extends WireData implements Module {
+
+  public static function getModuleInfo() {
+
+    return array(
+      'title' => 'Sky', 
+      'version' => 101, 
+      'summary' => 'Sky Module',
+      'href' => 'http://www.processwire.com',
+      'singular' => true, 
+      'autoload' => true, 
+      );
+  }
+
+  public function init() {
+    $this->addHook('PageArray::toJSON', $this, 'pagesToJSON');
+    $this->addHook('PageArray::toArray', $this, 'pagesToArray');
+    $this->addHook('Page::toJSON', $this, 'pageToJSON');
+    $this->addHook('Page::toArray', $this, 'pageToArray');
+
+    $this->addHookAfter("ProcessPageEdit::buildForm", $this, "buildFormHook");  
+
+    $this->pages->addHookAfter('save', $this, 'clearCache');
+    $this->pages->addHookAfter('delete', $this, 'clearCache');
+
+    $this->clearStopWords();
+  }
+
+  //PAGE HOOKS
+  //region  
+  public function pagesToJSON($event) {
+    $pages = $event->object; 
+
+    $a = array();
+    foreach($pages as $page) {
+      $a[] = $this->_pageToArray($page); 
+    }
+    
+    $event->return = json_encode($a);  
+  }
+
+  public function pageToJSON($event) {
+    $event->return = json_encode($this->_pageToArray($event->object));  
+  }
+
+  public function pagesToArray($event) {
+    $pages = $event->object; 
+
+    $a = array();
+    foreach($pages as $page) {
+      $a[] = $this->_pageToArray($page); 
+    }
+    
+    $event->return = $a;  
+  }
+
+  public function pageToArray($event) {
+    $event->return = $this->_pageToArray($event->object);  
+  }
+
+  protected function _pageToArray(Page $page) {
+
+    $outputFormatting = $page->outputFormatting;
+    $page->setOutputFormatting(false);
+
+    $data = array(
+      'id' => $page->id,
+      'parent_id' => $page->parent_id,
+      'templates_id' => $page->templates_id,
+      'name' => $page->name,
+      'status' => $page->status,
+      'sort' => $page->sort,
+      'sortfield' => $page->sortfield,
+      'numChildren' => $page->numChildren,
+      'template' => $page->template->name,
+      'parent' => $page->parent->path,
+      'created' => $page->created,
+      'url' => $page->url,
+      'data' => array(),
+      );
+
+    foreach($page->template->fieldgroup as $field) {
+      if($field->type instanceof FieldtypeFieldsetOpen) continue;
+
+      if($field->type instanceof FieldtypeRepeater) {
+        $repeater = $page->get($field->name); 
+        $ss = $field->name;
+        $data['data'][$field->name] = array();
+        foreach ($repeater as $key => $value) {
+          $data['data'][$field->name][] = $this->_pageToArray($value);
+        }
+        continue;
+      }
+
+      if($field->type instanceof FieldtypeImage) {
+        $value = $page->get($field->name); 
+        $data['data'][$field->name] = array();
+        if($value instanceof Pageimage || ($value instanceof Pageimages && $value->count() === 1)){ 
+          if($value instanceof Pageimages) {
+            $image = $value->first();
+          } else {
+            $image = $value;
+          }
+          if($image->width > 150) {
+            $thumb = $image->width(150, array('upscaling' => false, 'cropping'=>false));
+          } else {
+            $thumb = $image;                
+          }
+          if($image->width > 350) {
+            $medium = $image->width(350, array('upscaling' => false, 'cropping'=>false));
+          } else {
+            $medium = $image;
+          } 
+          if($image->width > 750) {
+            $large = $image->width(750, array('upscaling' => false, 'cropping'=>false));
+          } else {
+            $large = $image;
+          }
+          if($image->width > 1190) {
+            $full = $image->width(1190, array('upscaling' => false, 'cropping'=>false));
+          } else {
+            $full = $image;
+          }
+
+          if(!empty(Api::$config['assets_domain'])) {
+            $data['data'][$field->name] = array('name' => $image->name, 'thumb' => Api::$config['assets_domain'] . $thumb->url, 'medium' => Api::$config['assets_domain'] . $medium->url, 'large' => Api::$config['assets_domain'] . $large->url, 'full' => Api::$config['assets_domain'] . $full->url, 'url' => Api::$config['assets_domain'] . $image->url, 'description' => $image->description, 'scaled' => $image->width > 256 || $image->height > 145); 
+          } else {
+            $data['data'][$field->name] = array('name' => $image->name, 'thumb' => $thumb->url, 'medium' => $medium->url, 'large' => $large->url, 'full' => $full->url, 'url' => $image->url, 'description' => $image->description, 'scaled' => $image->width > 256 || $image->height > 145);
+          }
+
+        } else {
+          foreach ($value->getValues() as $key => $image) {
+            if($image->width > 150) {
+              $thumb = $image->width(150, array('upscaling' => false, 'cropping'=>false));
+            } else {
+              $thumb = $image;
+            }
+            if($image->width > 350) {
+              $medium = $image->width(350, array('upscaling' => false, 'cropping'=>false));
+            } else {
+              $medium = $image;
+            }
+            if($image->width > 750) {
+              $large = $image->width(750, array('upscaling' => false, 'cropping'=>false));        
+            } else {
+              $large = $image;
+            }
+            if($image->width > 1190) {
+              $full = $image->width(1190, array('upscaling' => false, 'cropping'=>false));
+            } else {
+              $full = $image;
+            }
+            if(!empty(Api::$config['assets_domain'])) {
+              $data['data'][$field->name][] = array('name' => $image->name, 'thumb' => Api::$config['assets_domain'] . $thumb->url, 'medium' => Api::$config['assets_domain'] . $medium->url, 'large' => Api::$config['assets_domain'] . $large->url, 'full' => Api::$config['assets_domain'] . $full->url, 'url' => Api::$config['assets_domain'] . $image->url, 'description' => $image->description, 'scaled' => $image->width > 256 || $image->height > 145); 
+            } else {
+              $data['data'][$field->name][] = array('name' => $image->name, 'thumb' => $thumb->url, 'medium' => $medium->url, 'large' => $large->url, 'full' => $full->url, 'url' => $image->url, 'description' => $image->description, 'scaled' => $image->width > 256 || $image->height > 145);
+            }
+          }    
+        }
+
+        continue;
+      }
+
+      if($field->type instanceof FieldtypeDatetime) {
+        $data['data'][$field->name] = $page->getUnformatted($field->name);
+        continue;
+      }
+
+      if($field->type instanceof FieldtypeFile) {
+        $value = $page->get($field->name); 
+
+        if($value instanceof Pagefiles && $value->count() > 1){ 
+          $data['data'][$field->name] = array();
+          foreach ($value->getValues() as $key => $file) {
+            $file_url = $file->url;
+            if(!empty(Api::$config['assets_domain'])) {
+              $file_url = Api::$config['assets_domain'] . $file_url;
+            }
+            $data['data'][$field->name][] = $file_url;
+          }
+        } else {
+          if($value instanceof Pagefiles) {
+            $value = $value->first(); 
+          }
+          $file_url = $value->url;
+          if(!empty(Api::$config['assets_domain'])) {
+            $file_url = Api::$config['assets_domain'] . $file_url;
+          }
+          $data['data'][$field->name] = $file_url;
+        }
+
+        continue;
+      }        
+
+      try {
+        $value = $page->get($field->name); 
+        $data['data'][$field->name] = $field->type->sleepValue($page, $field, $value);
+      } catch(Exception $e) {
+          //archived assets will cause exceptions because the sleepValue function will also validate the field
+          //delete the reference as it's no longer required anyway
+        if(strpos($e->getMessage(), 'asset_to_replace') !== false) {
+          $page->asset_to_replace = null;
+          $page->save();
+          $data['data'][$field->name] = null;
+        }
+      }
+
+    }
+
+    $page->setOutputFormatting($outputFormatting);
+    return $data;
+  }
+  //endregion
+
+  public function buildFormHook(HookEvent $event){
+
+    $page = $event->object->getPage();
+
+    if(wire("user")->hasRole("superuser")) return;
+
+      // the form InputfieldWrapper returned by ProcessPageEdit::buildForm()
+    $form = $event->return;
+
+      // find the desired InputfieldWrapper's and remove them from the form
+
+    $fieldset = $form->find("id=ProcessPageEditSettings")->first();
+    $form->remove($fieldset);
+
+    $fieldset = $form->find("id=ProcessPageEditView")->first();
+    $form->remove($fieldset);
+
+    $fieldset = $form->find("id=ProcessPageEditChildren")->first();
+    $form->remove($fieldset);
+
+    if(in_array($page->template->name, array('team','settings_general', 'settings_content', 'guidelines', 'our_brand'))) {
+      $fieldset = $form->find("id=ProcessPageEditDelete")->first();
+      $form->remove($fieldset);
+    }
+  } 
+
+  public function clearCache(HookEvent $event){
+
+    $page = $event->arguments[0];
+    if(in_array($page->template->name, array(
+      'asset',
+      'news',
+      'campaign',
+      'our_brand',
+      'guidelines',
+      'settings_general',
+      'settings_content',
+      'team',
+      'root',
+      'user',
+      'select',
+      'booking'
+      ))){
+      wire('modules')->get("MarkupCache")->removeAll();
+  };     
+} 
+
+  //UTILITY functions
+  //region
+
+public function clearStopWords() {
+  $words = DatabaseStopwords::getAll();
+  if(count($words)) {
+    foreach($words as $word) {
+      DatabaseStopwords::remove( $word );
+    } 
+  }
+}
+
+public static function excerpt( $content, $length = 300) {
+  $pattern = "/[a-zA-Z]*[:\/\/]*[A-Za-z0-9\-_]+\.+[A-Za-z0-9\.\/%&=\?\-_]+/i";
+  $replacement = "";
+  $content = preg_replace($pattern, $replacement, $content);
+  $out = preg_replace('#<[^>]+>#', ' ', $content);
+  $out = self::wordLimiter($out, $length);
+    // All two space-runs to single space runs
+  $out = preg_replace('/\s+/', ' ',$out);
+    // No leading or trailing spaces.
+  $out = trim( $out );
+  return $out;
+}
+
+private static function wordLimiter($str = '', $limit = 120, $endstr = '...'){
+
+  if($str == '') return '';
+
+  if(strlen($str) <= $limit) return $str;
+
+  $out = substr($str, 0, $limit);
+  $pos = strrpos($out, " ");
+  if ($pos>0) {
+    $out = substr($out, 0, $pos);
+  }
+  $out .= $endstr;
+  return $out;
+
+}
+  //endregion
+
+}

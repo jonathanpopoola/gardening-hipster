@@ -1,0 +1,44 @@
+
+<div class="container">
+    
+    <div class="row">
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <div data-plant-filter="" data-search="search" data-input-title="Search by article name"></div>
+        </div>
+    </div>
+    <div class="row hidden-sm hidden-xs">
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <h1 data-ng-hide="filtered.length == 0">Gardening articles, news and more</h1>
+        </div>
+    </div> 
+    <div class="row"> 
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 highlighted-plant" data-ng-hide="search.title.length >= 1">
+            <div class="col-md-5 col-lg-5 col-sm-12 col-xs-12">
+                <div class="plants-main-image" style="background-image: url({{articles.articles[0].image.medium}})"></div>
+            </div>
+            <div class="col-md-7 col-lg-7 col-sm-12 col-xs-12">
+                <h2 class="custom-font-semi-bold" data-ng-bind="articles.articles[0].title"></h2>
+                <h3 class="custom-font-light">{{articles.articles[0].article_subheading}}</h3>
+                <p>{{articles.articles[0].article_body | limitTo : 380}} ...</p>
+                <a href="#/articles/{{articles.articles[0].title}}">Find out more</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <p data-ng-show="filtered.length == 0">Sorry there are'nt articles that match your search, please try a different search.</p>
+        </div>
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 plant-article-list-container"> 
+            <ul class="plant-lister list-unstyled ">
+                <!--<li data-ng-if="$index > 0" data-ng-repeat="plant in plantinfo.plants | filter:search | orderBy:'title'"> -->
+                <li data-ng-repeat="article in filtered = (articles.articles | filter:search | orderBy:'title')"> 
+                    <h3 data-ng-bind="article.title"></h3>
+                    <div class="image-maintainer" style="background-image: url({{article.image.medium}})"></div>
+                    <p class="article-text-mainter">{{article.article_subheading | limitTo: 70}}...</p>
+                    <a href="#/articles/{{article.title}}">Read more</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,10 @@
+
+    <h4 class="custom-font-light widget-title">You can plant the following <strong>{{sowMiniList.type}}s</strong> in <strong>{{sowMiniList.month}}</strong></h4>
+     <ul class="list-unstyled mini-plant-list">
+         <li data-ng-repeat="plant in sowMiniList.plants | limitTo: 3">
+             <h4><a href="#/plants/{{sowMiniList.type}}s/{{plant.title}}">{{plant.title}}</a></h4><small data-ng-show="plant.nickname">Also know as: <b>{{plant.nickname}}</b> </small>
+                 <p>{{plant.plant_description | limitTo: 45}} ...</p>
+             </li>
+     </ul>
+     <a href="#/what-can-i-plant">View more</a>
+

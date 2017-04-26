@@ -1,0 +1,14 @@
+    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+         <h4 class="custom-font-light widget-title">You can plant the following <strong>{{sowFullList.type}}s</strong> in <strong>{{sowFullList.month}}</strong></h4>
+    </div>
+    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 mini-plant-list full-plant-list" data-ng-repeat="plant in sowFullList.plants">
+         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-12" >
+             <img class="img-thumbnail pull-left" src="{{plant.image.thumb}}" title="{{plant.title}}" alt="Thumb nail photo of the {{plant.title}}" />
+         </div>
+         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12 list-detail-col">
+             <h3><a href="#/plants/{{sowFullList.type}}s/{{plant.title}}">{{plant.title}}</a></h3><p data-ng-show="plant.nickname">Also know as: <b>{{plant.nickname}}</b> </p>
+             <p>Description: {{plant.plant_description | limitTo: 260 }} ...</p> <a href="#/plants/{{sowFullList.type}}s/{{plant.title}}">Find out more</a>
+         </div>
+     <div>
+     
+

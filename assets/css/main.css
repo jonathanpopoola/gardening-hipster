@@ -1,0 +1,1470 @@
+body {
+    background-color: #F9F9F9;
+    margin: 0px;
+    padding: 0px;
+    font-family: 'Open Sans', sans-serif;
+}
+
+a {
+    outline: none !important;
+}
+
+/*input[type=checkbox]:checked{*/
+/*  color: #f00 !important;*/
+/*  margin-left: 20px;*/
+/*} */
+
+/*
+    GLOBAL FONT CLASSES
+    START
+*/
+
+.custom-font-light {
+    font-weight: 300;
+}
+
+.custom-font-normal {
+    font-weight: 400;
+}
+
+.custom-font-semi-bold {
+    font-weight: 600;
+}
+
+.custom-font-bold {
+    font-weight: 700;
+}
+
+.addCapitals {
+    text-transform: capitalize;
+}
+
+.area-heading {
+    color: #7A7A78;
+    font-size: 20px;
+}
+
+
+/*
+    GLOBAL FONT CLASSES
+    END
+*/
+
+.photo-frame {
+    border: solid 1px #333;
+}
+
+
+/* footer push */
+
+
+/* Sticky footer styles
+-------------------------------------------------- */
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    /* Margin bottom by footer height */
+    margin-bottom: 80px;
+}
+
+#main {
+    padding-bottom: 80px;
+    min-height:750px;
+}
+
+
+/*
+    logo color #79B32A
+*/
+
+
+/* 
+    HEADER CLASS 
+    START
+*/
+
+.header-bar {
+    background-color: #fff;
+    border-bottom: solid 1px #ddd;
+    position: relative;
+}
+
+.header-bar #logo {
+    display: block;
+    background-image: url('../img/logo.png');
+    background-repeat: no-repeat;
+    text-indent: -9999px;
+    outline: none;
+}
+
+
+/*.header-bar #header-nav {*/
+
+
+/*    margin-top: 24px;*/
+
+
+/*}*/
+
+.header-bar #header-nav li {
+    border-right: solid 1px #ddd;
+}
+
+.header-bar #header-nav li:last-child {
+    border-right: none;
+}
+
+.header-bar #header-nav a {
+    color: #333;
+    outline: none;
+}
+
+.header-bar #header-nav a:Hover {
+    color: #79B32A;
+    text-decoration: none;
+    outline: none;
+}
+
+.header-bar .search-results {
+    position: absolute;
+    top: 46px;
+    background: #fff;
+    border: solid 1px #ddd;
+    z-index: 9999;
+    width: 300px;
+    right: -3px;
+    padding: 10px;
+    display: none;
+}
+
+.footer-bar {
+    height: 80px;
+    background-color: #fff;
+    border-top: solid 1px #ddd;
+    position: relative;
+    margin-top: 30px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    /* Margin bottom by footer height */
+    margin-bottom: 80px;
+}
+
+.footer-bar #logo {
+    display: block;
+    width: 190px;
+    height: 26px;
+    background-image: url('../img/logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    text-indent: -9999px;
+    outline: none;
+    margin-top: 14px;
+}
+
+.footer-bar #header-nav {
+    margin-top: 12px;
+}
+
+.footer-bar #header-nav li {
+    border-right: solid 1px #ddd;
+}
+
+.footer-bar #header-nav li:last-child {
+    border-right: none;
+}
+
+.footer-bar #header-nav a {
+    color: #333;
+    font-size: 12px;
+}
+
+.footer-bar #header-nav a:Hover {
+    color: #79B32A;
+    text-decoration: none;
+}
+
+
+
+
+/* 
+    HEADER CLASS 
+    END
+*/
+
+
+/* 
+    SPLASH PANELS
+    START
+*/
+
+.splash-panel {
+ 
+    height: 200px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-repeat: no-repeat;
+}
+
+.min-sow-list a {
+    color: #79b32a;
+    text-decoration: underline;
+}
+
+.news-container {
+    background-color: #fff;
+    min-height: 200px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border: solid 1px #ddd;
+}
+
+.june {
+    /*background-image: url('../img/june.jpg');*/
+    /*background-position: -139px -315px;*/
+    /*color: #fff;*/
+}
+
+.june img {
+    opacity: 0.4;
+}
+
+
+/* 
+    SPLASH PANELS
+    END
+*/
+
+
+/* 
+    MINI SOW LIST 
+    START
+    
+*/
+
+
+/*
+    
+    ARTICLE STUFF
+    START
+
+*/
+
+.article-body-text {
+    margin-top: 20px;
+}
+
+.article-text-mainter {
+    height: 60px;
+}
+
+
+/*
+    
+    ARTICLE STUFF
+    END
+
+*/
+
+.widget-title {
+    font-size: 16px !important;
+}
+
+.mini-plant-list li {
+    padding-bottom: 10px;
+    border-bottom: solid 1px #ddd;
+}
+
+.mini-plant-list li:last-child {
+    border-bottom: none;
+}
+
+.mini-plant-list li h4 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.mini-plant-list li:first-child {
+    border-top: solid 1px #ddd;
+    padding-top: 5px;
+}
+
+
+/* 
+    MINI SOW LIST 
+    END
+    
+*/
+
+
+/*
+    * FULL SOW LIST
+    * START
+    
+*/
+
+.full-plant-list {
+    border-bottom: solid 1px #ddd;
+    padding-bottom: 10px;
+    padding-top: 10px;
+}
+
+.full-plant-list:last-child {
+    border: none;
+}
+
+
+/*
+    * FULL SOW LIST
+    * END
+    
+*/
+
+
+/*
+    
+    * CARD FLIPPER
+    * START
+    
+*/
+
+.flip-container {
+    perspective: 1000;
+    box-sizing: border-box;
+}
+
+
+/* flip the pane when hovered */
+
+.flip-container:hover .flipper,
+.flip-container.hover .flipper {
+    transform: rotateY(180deg);
+}
+
+.flip-container,
+.front {
+    width: 100%;
+    height: 196px;
+}
+
+
+/* flip speed goes here */
+
+.flipper {
+    transition: 1s;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+.flipper .back {
+    background-color: #79B32A;
+    border: 1px solid #DDDDDD;
+    border-radius: 4px;
+    display: inline-block;
+    height: auto;
+    line-height: 1.42857;
+    max-width: 100%;
+    width: 100%;
+    padding: 4px;
+    height: 202px;
+    text-align: center;
+    color: #fff;
+}
+
+.flipper .back a {
+    margin-top: 60px;
+    color: #fff;
+}
+
+.flipper .back p {
+    margin-top: 60px;
+}
+
+.news-description {
+    margin-top: 10px;
+}
+
+.back {
+    position: relative;
+}
+
+
+/* hide back of pane during swap */
+
+.front,
+.back {
+    backface-visibility: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+
+/* front pane, placed above back */
+
+.front {
+    z-index: 2;
+    /* for firefox 31 */
+    transform: rotateY(0deg);
+}
+
+
+/* back, initially hidden pane */
+
+.back {
+    transform: rotateY(180deg);
+}
+
+.external-news {
+    font-size: 30px;
+}
+
+
+/*
+    
+    * CARD FLIPPER
+    * END
+    
+*/
+
+.deal-elem {
+    padding: 5px;
+    width: 25%;
+    float: left;
+    height: 470px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.deal-elem strong {
+    color: #79B32A;
+    font-size: 14px;
+}
+
+.deal-elem p {
+    font-size: 12px;
+    margin-top: 10px;
+    text-align: left;
+}
+
+.deal-elem a {
+    display: block;
+    color: #fff;
+    width: 100%;
+    height: 30px;
+    background: #79b32a;
+    padding-top: 5px;
+    margin-top: 10px;
+}
+
+.deal-elem .inner {
+    width: 90%;
+    margin-left: 5%;
+    margin-top: 5%;
+    border: solid 1px #ddd;
+    background: #fff;
+    padding: 10px;
+    text-align: center;
+}
+
+.deal-elem:nth-child(5) {
+    clear: left;
+}
+
+.deal-elem h4 {
+    font-size: 14px;
+    height: 40px;
+    color: #79B32A;
+}
+
+.mini-deal {
+    width: 90%;
+    margin-left: 5%;
+    margin-right: 5%;
+}
+
+.mini-deal h4 {
+    color: #79b32a;
+    height: 32px;
+    overflow: hidden;
+}
+
+.mini-deal .inner {
+    width: 90%;
+    margin-left: 5%;
+    margin-top: 5%;
+    border: solid 1px #ddd;
+    background: #fff;
+    padding: 10px;
+}
+
+.mini-deal .inner p {
+    height: 134px;
+    overflow: hidden;
+}
+
+.mini-deal a {
+    display: block;
+    color: #fff;
+    width: 100%;
+    height: 30px;
+    background: #79B32A;
+    padding-top: 5px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.mini-deal strong {
+    color: #79b32a;
+    font-size: 16px;
+}
+
+.mini-deal img {
+    float: left;
+    margin-right: 10px;
+    width: 36%;
+}
+
+.deal-column-header {
+    margin-left: 10%;
+    font-size: 20px;
+    margin-top: 22px;
+}
+
+.mini-deal img {
+    text-align: center;
+}
+
+.pager-container .mini-deal {
+    width: 24%;
+    margin-right: 1%;
+    float: left;
+    margin-left: 0px;
+    height: 311px;
+}
+
+.pager-container .mini-deal .inner {
+    height: 280px;
+    position: relative;
+}
+
+.pager-container .mini-deal .inner a {
+    position: absolute;
+    bottom: 10px;
+    left: 5px;
+    width: 95%;
+}
+
+.pager-container .mini-deal h4 {
+    font-size: 14px;
+    margin-top: 0px;
+}
+
+.pager-container .mini-deal p {
+    font-size: 13px;
+}
+
+.pager-container .mini-deal:nth-child(5) {
+    clear: left;
+}
+
+.page-loading {
+    position: absolute;
+    left: 50%;
+    margin-left: -10px;
+    bottom: 5px;
+}
+
+#search-bar {
+    height: 35px;
+    width: 600px;
+    background: #000;
+}
+
+#search-bar {
+    display: none;
+}
+
+.visible {
+    display: block !important;
+}
+
+.search-elem li {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.search-elem img {
+    width: 15%;
+    float: left;
+    margin-right: 5px;
+}
+
+.search-elem h5 {
+    font-size: 12px;
+    margin-left: 5px;
+    margin-top: 0px;
+}
+
+.deal-indivdual-page h1 {
+    font-size: 26px;
+}
+
+.buy-now-price {
+    color: #79b32a;
+    text-decoration: underline;
+    font-size: 24px;
+}
+
+.more-deal-holder .mini-deal {
+    width: 35%;
+    display: inline-block;
+    margin: 0px;
+}
+
+.highlighted-plant {
+    border-bottom: solid 1px #ddd;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+.plant-lister {
+    margin-left: 28px;
+}
+
+.plants-main-image {
+    width: 450px;
+    height: 275px;
+    display: block;
+    background-size: cover;
+    margin-top: 10px;
+}
+
+.secondary-title {
+    margin-top: 20px;
+    margin-bottom: 0px;
+    margin-left: 18px;
+}
+
+.plant-lister li {
+    display: inline-block;
+    width: 31%;
+    margin-right: 2%;
+    border-bottom: solid 1px #ddd;
+    background: #fff;
+    margin-bottom: 20px;
+    padding: 0px 10px 10px 10px;
+}
+
+.plant-lister li h3 {
+    margin-top: 10px;
+}
+
+.plant-lister li .image-maintainer {
+    width: 100%;
+    height: 100px;
+    background-size: cover;
+    border: solid 1px #333;
+    background-position: 0 30%;
+    margin-bottom: 10px;
+}
+
+.plant-article-list-container {
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+.image-maintainer-body {
+    width: 100%;
+    height: 270px;
+    background-size: cover;
+    border: solid 1px #333;
+    background-position: 0 30%;
+}
+
+
+/* home page stuff new */
+
+.home-intro {
+    margin-bottom: 30px;
+}
+
+.article-main-image {
+    width: 100%;
+    height: 272px;
+    display: block;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 40% 50%;
+}
+
+.home-side-news-articles ul li:first-child h4,
+.home-main-news-article h3 {
+    margin-top: 0px;
+}
+
+.home-side-news-articles ul li {
+    background-color: #fff;
+    border: solid 1px #ddd;
+    padding: 10px;
+    margin-bottom: 14px;
+}
+
+.aThird {
+    width: 33.3%;
+    padding: 10px !important;
+}
+
+.home-plant-list {
+    background-color: #fff;
+    border: solid 1px #ddd;
+}
+
+.home-plant-list ul li {}
+
+.home-plant-list li img {}
+
+.plant-thumb {
+    height: 100px;
+    background-size: cover;
+    margin: 10px 0px 10px 0px;
+}
+
+.sponsored-adverts-side {}
+
+.sponsored-adverts-side .advert {
+    margin-bottom: 30px;
+}
+
+.sponsored-adverts-side .advert a {
+    display: block;
+    width: 100%;
+    max-height: 250px;
+}
+
+.home-main-news-article {
+    background-color: #fff;
+    border: solid 1px #ddd;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+
+/*
+
+    loading animation
+    
+    */
+
+.mainLoaderContainer {
+    position: fixed;
+    z-index: 7777;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 100%;
+}
+
+.loader-back-drop {
+    position: fixed;
+    z-index: 8888;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 100%;
+    background: #545454;
+    opacity: 0.8;
+}
+
+.spinner {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: -50px;
+    margin-top: -50px;
+    text-align: center;
+    z-index: 9999;
+}
+
+.loadingText {
+    z-index: 9999;
+    color: #fff;
+    font-size: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -30px;
+    margin-top: -10px;
+    position: absolute;
+}
+
+.double-bounce1,
+.double-bounce2 {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: #79B32A;
+    opacity: 0.6;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    -webkit-animation: bounce 2.0s infinite ease-in-out;
+    animation: bounce 2.0s infinite ease-in-out;
+}
+
+.double-bounce2 {
+    -webkit-animation-delay: -1.0s;
+    animation-delay: -1.0s;
+}
+
+@-webkit-keyframes bounce {
+    0%, 100% {
+        -webkit-transform: scale(0.0)
+    }
+    50% {
+        -webkit-transform: scale(1.0)
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: scale(0.0);
+        -webkit-transform: scale(0.0);
+    }
+    50% {
+        transform: scale(1.0);
+        -webkit-transform: scale(1.0);
+    }
+}
+
+
+
+
+#wrapper {
+    position: relative;
+    top: 0;
+    left: 0;
+    margin-bottom: -80px;
+    padding-bottom: 20px;
+    z-index: 100;
+}
+
+#wrapper.menu-open {
+    left: 70% !important;
+    transition: 1s;
+}
+
+#nav-wrapper.menu-open {
+    transition: 1s;
+    left: 0 !important;
+}
+
+#nav-wrapper {
+    position: absolute;
+    left: -70%;
+    width: 70%;
+    height: 100%;
+    background: #f9f9f9;
+    border-right: solid 1px #ddd;
+    z-index: 0;
+}
+
+
+#nav-wrapper ul {
+    margin: 0px;
+    padding: 0px;
+    list-style: none;
+}
+
+
+#nav-wrapper ul li {
+    padding: 10px 0px 10px 10px;
+    width: 100%;
+    border-bottom: solid 1px #ddd;
+}
+
+#nav-wrapper ul li a {
+   font-weight: 600;
+   color: #333;
+   font-size: 16px;
+}
+
+/* hamburger navigation */
+
+#hamburger {
+    border: 1px solid #405f17;
+    border-radius: 3px 3px 3px 3px;
+    cursor: pointer;
+    display: block;
+    height: 24px;
+    padding: 3px 4px 3px;
+    position: relative;
+    top:3px;
+    left:0;
+    margin-top: 5px;
+    width: 25px;
+    background: #79b32a;
+    background: -moz-linear-gradient(top, #79b32a 0%, #88ca2f 100%);
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #4569b2), color-stop(100%, #88ca2f));
+    background: -webkit-linear-gradient(top, #79b32a 0%, #88ca2f 100%);
+    background: -o-linear-gradient(top, #79b32a 0%, #88ca2f 100%);
+    background: -ms-linear-gradient(top, #79b32a 0%, #88ca2f 100%);
+    background: linear-gradient(to bottom, #79b32a0%, #88ca2f100%);
+    filter: progid: DXImageTransform.Microsoft.gradient( startColorstr='#79b32a', endColorstr='#88ca2f', GradientType=0);
+}
+
+
+/*
+The white stripes in the hamburger button
+*/
+
+#hamburger div {
+    background-color: #fff;
+    border: 1px solid #eee;
+    border-radius: 2px 2px 2px 2px;
+    height: 2px;
+    margin-top: 3px;
+    width: 90%;
+}
+
+
+
+
+ /*Large Devices, Wide Screens */
+
+
+/*
+    FILTER FOR PAGING STYLES
+    
+    */
+    
+    #filterTitle {
+        display: block;
+    }
+    
+    #filterControl {
+      display: none;  
+      margin: 10px 0px 10px 0px;
+      font-size: 14px;
+    }
+
+
+@media only screen and (min-width : 1200px) {
+    
+    .article-text-mainter {
+        height: auto;
+    }
+    
+    .mini-deal h4 {
+        height: 40px;
+    }
+    
+    .header-bar {
+        height: 60px;
+    }
+    .header-bar #logo {
+        width: 290px;
+        height: 52px;
+        margin-top: 3px;
+    }
+    .header-bar #header-nav {
+        margin-top: 18px;
+    }
+    
+    .article-main-image {
+        height: 295px;
+    }
+    
+    .header-bar #header-nav a {
+        font-size: 16px;
+    }
+    
+    .home-plant-list {
+        margin-left: 0px;
+    }
+    
+    .home-plant-list-wrapper {
+         padding-left: 0px;
+         padding-right: 0px;
+    }
+    
+    .pager-container {
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+    
+    .pager-container .mini-deal {
+        margin-right: 0px;
+        width:25%;
+    }
+    
+    .mini-deal .inner {
+        margin-top: 20px;
+        margin-left: 0px;
+        width: 100%;
+    }
+    
+    /*.mini-deal .inner:nth-child(4n+4) {*/
+    /*    margin-right: 0px;*/
+    /*}*/
+    
+    #searchInput {
+        margin-top: 17px;
+    }
+    
+    .home-side-news-articles {
+        margin-top: 0px;
+    }
+    
+    .home-side-news-articles .list-unstyled {
+        padding-left: 20px;
+    }
+
+}
+
+
+ /*Medium Devices, Desktops */
+
+
+@media only screen and (max-width : 1199px) {
+    
+    /*body {*/
+    /*    background: black;*/
+    /*}*/
+    
+    .mini-deal h4 {
+       height: 43px;
+    }
+    
+    .sponsored-adverts-side {
+        
+    }
+    
+    #wrapper {
+        overflow: hidden;
+    }
+    
+    .pager-container .mini-deal {
+        width: 33%;
+        margin-left: 0%;
+        margin-right: 0%;
+    }
+    .mini-deal .inner {
+        margin-left: 0%;
+        margin-right: 0%;
+    }
+    .pager-container .mini-deal:nth-child(5) {
+        clear: none;
+    }
+    #header-nav {
+        float: left;
+    }
+    #header-nav li a {
+        font-size: 12px;
+    }
+    
+    #header-nav li {
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+    
+    .header-bar {
+        height: 50px;
+    }
+    .header-bar #header-nav {
+        margin-top: 14px;
+    }
+    #searchInput {
+        margin-top: 10px;
+    }
+    .header-bar #logo {
+        width: 100%;
+        background-size: contain;
+        height: 40px;
+        margin-top: 5px;
+    }
+    
+    .article-main-image {
+        height: 327px;
+    }
+    
+    .home-plant-list-wrapper {
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+    
+    .pager-container {
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+    
+    .pager-container .mini-deal {
+        margin-right: 0px;
+        width:25%;
+    }
+    
+    .mini-deal .inner {
+        margin-top: 20px;
+        margin-left: 0px;
+        width: 100%;
+    }
+    
+    .home-plant-list {
+        margin-left: 0px;
+    }
+    
+    /* plants page */
+    .plants-main-image {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .highlighted-plant {
+            
+    }
+
+}
+
+@media only screen and (max-width : 990px) {
+    /*body {*/
+    /*    background: #ddd;*/
+    /*}*/
+    
+    
+    .page-filter-container {
+        display: none;
+    }
+    
+    .page-filter-container.open {
+        display: block;
+    }
+    
+    #filterTitle {
+        display: none;
+    }
+    
+    #filterControl {
+      display: block;  
+    }
+    
+    .page-filter-container .checkbox{
+        float: left;
+        margin-right: 10px;
+        
+    }
+    
+    #tabletSearchInput {
+        width: 60px;
+        position: absolute;
+        z-index: 9998;
+        margin-top: 10px;
+        right:0;
+        transition: 0.8s;
+        border: none;
+        border-bottom: solid 1px #ddd;
+        
+        
+    }
+    
+    #tablet-search-icon {
+        z-index: 9999;
+        position: absolute;
+        right: 0;
+        top: 12px;
+        
+    }
+    
+    #tabletSearchInput.expanded {
+        width: 200px !important;
+    }
+    
+    .home-side-news-articles, .pager-container {
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+    
+    .home-side-news-articles .list-unstyled {
+        margin-top: 20px;
+    }
+    
+    .home-main-news-article .article-main-image {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .home-plant-list-wrapper {
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+    
+    .home-plant-list {
+        margin-left: 0px;
+        float: left;
+        margin-bottom: 0px;
+    }
+    
+    .home-plant-list li {
+        float: left;
+    }
+    
+    .sponsored-adverts-side {
+        margin-top: 20px;
+    }
+    
+    .sponsored-adverts-side .advert {
+        float: left;
+        margin-right: 20px;
+    }
+    
+    .pager-container .mini-deal {
+        width: 33.3%;
+        margin-top: 20px;
+        margin-bottom: 0px;
+        height: auto;
+    }
+    
+    .pager-container .mini-deal .inner {
+        width: 100%;
+        margin-top: 0px;
+    }
+    
+    .header-bar #header-nav {
+        float: left !important;
+    }
+    
+    /* plants page */
+    .plant-lister h3 {
+        font-size: 18px;
+        height: 30px;
+        line-height: 22px;
+    }
+    
+    .plant-article-deal-holder .mini-deal {
+        width: 47%;
+        margin-right: 1.5%;
+        margin-left: 0px;
+        float: left;
+    }
+    
+    .plant-article-deal-holder .mini-deal .inner p{
+         height: 170px;   
+    }
+    
+    .plant-article-deal-holder .mini-deal .inner a{
+        margin-top: 10px;
+    }
+    
+    .plant-article-deal-holder .deal-column-header {
+        margin-left: 0px;
+    }
+    
+    .footer-bar {
+        height: 40px;
+    }
+    
+    .footer-bar #logo {
+        margin-top: 7px;
+        position: absolute;
+        margin-left: -75px;
+        left: 50%;
+    }
+    
+    
+}
+
+
+ /*Small Devices, Tablets */
+
+
+@media only screen and (max-width : 768px) {
+    /*body {*/
+    /*    background: blue;*/
+    /*}*/
+    
+    .article-text-mainter {
+        height: auto;
+    }
+    
+    .header-bar #logo {
+
+        margin-left: -115px;
+        background-size: contain;
+        height: 39px;
+        margin-top: 0px;
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width:230px;
+    }
+    
+    .sponsored-adverts-side .advert {
+        float: left;
+        margin-right: 20px;
+    }
+
+    
+    .header-bar {
+        height: 40px;
+    }
+    
+    #header-nav {
+        float: left !important;
+        margin-top: 9px;
+    }
+    #header-nav li a {
+        font-size: 12px;
+    }
+
+    #searchInput {
+        margin-top: 7px;
+    }
+    
+    
+    
+    .home-side-news-articles {
+        margin-top: 20px;
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+    
+    #main {
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+    
+    /* plant stuff */
+    
+    .plant-lister {
+        margin-left:  10px;
+    }
+    
+    .plant-lister li {
+        width: 48%;
+    }
+    
+    .plant-lister h3 {
+        font-size: 16px;
+        height: 30px;
+        line-height: 20px;
+        font-weight: bold;
+    }
+    
+    .mini-deal a {
+        margin-top: 63px;
+    }
+
+}
+
+
+ /*Extra Small Devices, Phones */
+
+
+@media only screen and (max-width : 480px) {
+    /*body {*/
+    /*    background: green;*/
+    /*}*/
+    
+    .header-bar {
+        height: 40px;
+    }
+    
+    .header-bar #logo {
+
+        margin-left: -74px;
+        background-size: contain;
+        height: 32px;
+        margin-top: 3px;
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width:180px;
+    }
+    
+    .aThird {
+        width: 100%;
+    }
+    
+    .pager-container .mini-deal {
+        width:100%;
+        margin-top: 20px;
+    }
+    
+    .pager-container .mini-deal .inner {
+        height: 264px;
+    }
+    
+    .home-side-news-articles .list-unstyled {
+        margin-top: 0px;
+    }
+
+    /* plant stuff */
+    
+    .plants-main-image {
+        height: 190px;
+    }
+    
+    .plant-lister {
+        margin-left: 2.5%
+    }
+    
+    .plant-lister li {
+        width: 97.5%;
+    }
+    
+    .nick-name-text {
+        font-size: 18px;
+        margin-top: 10px;
+    }
+    
+    .mini-deal .inner p {
+        height: auto;
+    }
+    
+    .mini-deal h4 {
+        overflow: none;
+        height: auto;
+    }
+    
+    .mini-deal a {
+        margin-top: 20px;
+    }
+    
+    .plant-article-deal-holder .mini-deal {
+        width: 100%;
+        margin-right: 0%;
+        margin-left: 0px;
+        float: left;
+    }
+    
+    .plant-article-deal-holder .mini-deal .inner p{
+         height: 200px;   
+    }
+    
+    
+
+}
+
+
+ /*Custom, iPhone Retina */
+
+
+@media only screen and (max-width : 320px) {
+
+
+}

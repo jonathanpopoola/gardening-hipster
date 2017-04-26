@@ -1,0 +1,24 @@
+
+<h3 id="filterTitle">Filter seeds and plants </h3>
+<a href="" class="custom-font-semi-bold" id="filterControl">Filter results <span aria-hidden="true" class="glyphicon glyphicon-filter"></span></a>
+<div data-ng-show="pageFilter.filterMerchantsCategories.length > 0">
+        <h5>Selected filters</h5>
+        <ul>
+                <li data-ng-repeat="selectedFilter in pageFilter.filterMerchantsCategories"><strong>{{selectedFilter}}</strong> <a data-ng-click="pageFilter.clearFilter(selectedFilter); $event.preventDefault()" href="#"><span aria-hidden="true" class="glyphicon glyphicon-remove-sign"></span></a></li>
+        </ul>
+</div>
+<form class="page-filter-container" id="page-filter-container">
+        <div data-ng-repeat="merchant_category in pageFilter.categories.merchant_category" class="form-group">
+
+                <div class="checkbox">
+                        <label>
+                                <input type="checkbox"  data-ng-change="pageFilter.filterChanged()" value="{{merchant_category.value}}" data-ng-model="pageFilter.categories.merchant_category[$index].checked" name="merchant_category" data-ng-checked="merchant_category.checked"> 
+                                {{merchant_category.value}}
+                              
+                        </label>
+                </div>
+
+        </div>
+
+</form> 
+

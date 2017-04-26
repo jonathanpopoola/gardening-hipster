@@ -1,0 +1,17 @@
+<h5 class="custom-font-semi-bold">{{newsarticle.title}}</h5>
+<div class="flip-container">
+    <div class="flipper">
+		<div class="front">
+			<img src="{{newsarticle.img}}" class="img-thumbnail" alt="News story image for {{newsarticle.title}}" title="{{newarticle.title}}" />
+		</div>
+		<div class="back">
+			
+				<p class="custom-font-semi-bold">To read the full article click below</p>
+		        <a class="custom-font-semi-bold" href="#">Read article in full</a>
+		        <span aria-hidden="true" class="glyphicon glyphicon-new-window external-news"></span>
+		
+			
+		</div>
+	</div>
+</div>
+<p class="news-description custom-font-light" data-ng-bind="newsarticle.blurb | limitTo: 100"> </p>

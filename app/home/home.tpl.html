@@ -1,0 +1,97 @@
+<div data-hipster-loader loaderName="home.loaderName" show="home.loaderShow"></div>
+
+<div class="container splash-panel" ng-class="home.currentMonth">
+
+    <div class="row hidden-sm hidden-xs">
+        <div class="col-lg-7 col-md-7 col-sm-12">
+            <h2 class="custom-font-semi-bold area-heading">This weeks featured article</h2>
+
+        </div>
+        <div class="col-lg-5 col-md-5">
+            <h2 class="custom-font-semi-bold area-heading">Latest articles</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <div class="col-lg-7 col-md-7 col-sm-12 col-xs-12 home-main-news-article">
+                <div class="col-lg-5 col-md-5 col-sm-12 col-xs-12">
+                    <div class="article-main-image" style="background-image: url({{home.articles[0].image.medium}})"></div>
+                </div>
+                <div class="col-lg-7 col-md-7 col-sm-12 col-xs-12">
+                    <h3 class="custom-font-semi-bold" data-ng-bind="home.articles[0].title"></h3>
+                    <h4 class="custom-font-normal" data-ng-bind="home.articles[0].article_subheading"></h4>
+                    <p class="custom-font-light">{{home.articles[0].article_body | limitTo: 345}} ...</p>
+                    <a href="#/articles/{{home.articles[0].title}}" title="Link to read full {{home.articles[0].title}} article">Read full article</a>
+                </div>
+            </div>
+            <div class="col-lg-5 col-md-5 col-sm-12 col-xs-12 home-side-news-articles">
+                <ul class="list-unstyled">
+                    <li data-ng-if="!$first" data-ng-repeat="article in home.articles">
+                        <h4 class="custom-font-semi-bold" data-ng-bind="article.title"></h4>
+                        <h5 class="custom-font-normal">{{article.article_subheading | limitTo : 50}} ...</h5>
+                        <p class="custom-font-light">{{article.article_body | limitTo: 106}} ...</p>
+                        <a href="#/articles/{{article.title}}" title="Link to read full {{article.title}} article">Read full article</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="row hidden-sm hidden-xs">
+        <div class="col-lg-9 col-md-9 col-sm-12">
+            <h2 class="custom-font-semi-bold area-heading">Newly added plants</h2>
+        </div>
+        <div class="col-lg-3 col-md-3 col-sm-12">
+            <h2 class="custom-font-semi-bold area-heading">Sponsored adverts</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-9 col-md-9 col-sm-12">
+            <div class="col-lg-12 col-md-12 col-sm-12 home-plant-list-wrapper">
+                <ul class="list-unstyled list-inline home-plant-list">
+
+                    <li data-ng-repeat="plant in home.plants" class="aThird">
+                        <article>
+                            <header>
+                                <h5 class="custom-font-semi-bold">{{plant.title}}</h5>
+                                <h6 data-ng-if="plant.nickname" class="custom-font-light">{{plant.nickname}}</h6>
+                                <h6 data-ng-if="!plant.nickname" class="custom-font-light">{{plant.title}}</h6>
+                            </header>
+                            <div class="plant-thumb" style="background-image: url({{plant.image.medium}});"></div>
+                            <!--<img data-ng-src="{{plant.image.large}}" class="img-responsive photo-frame" />-->
+                            <p>{{plant.plant_description | limitTo : 115}} ...</p>
+                            <footer>
+                                <a href="#plants/plant.template}}/{{plant.title}}">Find out more</a>
+                            </footer>
+                        </article>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 pager-container">
+                <!--<ul>-->
+                <!--    <li data-ng-repeat="deal in home.deals">-->
+                <!--        {{deal.product_name}}-->
+                <!--    </li>-->
+                <!--</ul>-->
+                <div class="mini-deal" data-deal-element-mini data-ng-repeat="deal in home.deals | limitTo : 8" deal="deal"></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12 sponsored-adverts-side">
+            <div class="advert">
+                <!--START MERCHANT:merchant name Gardening Direct from affiliatewindow.com.-->
+                <a href="https://www.awin1.com/cread.php?s=334064&v=1351&q=158230&r=213679"><img class="img-responsive" src="https://www.awin1.com/cshow.php?s=334064&v=1351&q=158230&r=213679" border="0"></a>
+                <!--END MERCHANT:merchant name Gardening Direct from affiliatewindow.com-->
+
+
+            </div>
+            <div class="advert">
+                <!--START MERCHANT:merchant name Gardening Direct from affiliatewindow.com.-->
+                <a href="https://www.awin1.com/cread.php?s=334066&v=1351&q=158230&r=213679"><img class="img-responsive" src="https://www.awin1.com/cshow.php?s=334066&v=1351&q=158230&r=213679" border="0"></a>
+                <!--END MERCHANT:merchant name Gardening Direct from affiliatewindow.com-->
+
+            </div>
+
+        </div>
+    </div>
+
+
+</div>
